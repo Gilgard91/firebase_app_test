@@ -7,6 +7,9 @@
 #GeneratedPluginRegistrant.java
 #.cxx/
 
+/settings.gradle.kts
+/local.properties
+
 # Remember to never publicly share your keystore.
 # See https://flutter.dev/to/reference-keystore
 
