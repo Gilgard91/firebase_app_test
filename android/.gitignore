@@ -12,6 +12,10 @@
 
 # Remember to never publicly share your keystore.
 # See https://flutter.dev/to/reference-keystore
+
+/local.properties
+/settings.gradle.kts
+
 key.properties
 **/*.keystore
 **/*.jks
