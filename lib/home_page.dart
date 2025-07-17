@@ -1,52 +1,74 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Importa FirebaseAuth
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  _HomePageState createState() => _HomePageState();
+  HomePageState createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Istanza di FirebaseAuth
+
+  Future<void> _logout() async {
+    try {
+      await _auth.signOut();
+      if (mounted) {
+        context.go('/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore durante il logout: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final User? user = _auth.currentUser;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Homepage'),
+        title: const Text('Homepage'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: _logout,
+          ),
+        ],
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Benvenuto nella Homepage!',
-              style: TextStyle(
+              // Mostra l'email dell'utente se loggato
+              user != null
+                  ? 'Benvenuto, ${user.email}!'
+                  : 'Benvenuto nella Homepage!',
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                context.go('/login');
-              },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                backgroundColor: Colors.orange,
-              ),
-              child: Text(
-                'Torna al Login',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 }
+    
