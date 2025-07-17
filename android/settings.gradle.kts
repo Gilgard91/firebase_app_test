@@ -7,7 +7,7 @@ pluginManagement {
         flutterSdkPath
     }
 
-    includeBuild("C:/Program Files/flutter/packages/flutter_tools/gradle")
+    includeBuild("/home/giordano/flutter/packages/flutter_tools/gradle")
 
     repositories {
         google()
