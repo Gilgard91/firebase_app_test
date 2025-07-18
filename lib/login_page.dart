@@ -18,7 +18,7 @@ class LoginPageState extends State<LoginPage> {
   bool _isGoogleLoading = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(serverClientId: 'test');
+  // final GoogleSignIn _googleSignIn = GoogleSignIn(serverClientId: 'test');
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
