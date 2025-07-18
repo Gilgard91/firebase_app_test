@@ -16,6 +16,7 @@ class LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+  bool _isRegistering = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // final GoogleSignIn _googleSignIn = GoogleSignIn(serverClientId: 'test');
@@ -67,68 +68,66 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Future<void> _signInWithGoogle() async {
-  //   setState(() {
-  //     _isGoogleLoading = true;
-  //   });
-  //   try {
-  //     // Avvia il flusso di accesso con Google.
-  //     // Firebase Auth utilizzerà Credential Manager su Android quando disponibile.
-  //     final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-  //
-  //     if (googleUser == null) {
-  //       // L'utente ha annullato il flusso di accesso
-  //       if (mounted) {
-  //         setState(() {
-  //           _isGoogleLoading = false;
-  //         });
-  //       }
-  //       return;
-  //     }
-  //
-  //     // Ottieni i dettagli dell'autenticazione dalla richiesta.
-  //     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-  //
-  //     // Crea una nuova credenziale Firebase.
-  //     final AuthCredential credential = GoogleAuthProvider.credential(
-  //       // accessToken: googleAuth.
-  //       idToken: googleAuth.idToken,
-  //     );
-  //
-  //     // Accedi a Firebase con la credenziale.
-  //     UserCredential userCredential = await _auth.signInWithCredential(credential);
-  //
-  //     if (mounted) {
-  //       // Naviga alla home page o alla pagina successiva
-  //       context.go('/home');
-  //     }
-  //   } on FirebaseAuthException catch (e) {
-  //     String errorMessage = 'Errore durante il login con Google: ${e.message}';
-  //     if (e.code == 'account-exists-with-different-credential') {
-  //       errorMessage = 'Esiste già un account con questa email ma con un metodo di accesso diverso.';
-  //     } else if (e.code == 'user-disabled') {
-  //       errorMessage = 'L\'account utente è stato disabilitato.';
-  //     }
-  //     // Aggiungi altri codici di errore specifici di FirebaseAuthException se necessario
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text(errorMessage)),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text('Si è verificato un errore imprevisto: $e')),
-  //       );
-  //     }
-  //   } finally {
-  //     if (mounted) {
-  //       setState(() {
-  //         _isGoogleLoading = false;
-  //       });
-  //     }
-  //   }
-  // }
+  Future<void> _register() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isRegistering = true;
+      });
+      try {
+        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // Opzionale: puoi salvare informazioni aggiuntive dell'utente
+        // nel database Firestore o Realtime Database qui.
+        // Esempio:
+        // await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+        //   'email': _emailController.text.trim(),
+        //   // altri campi...
+        // });
+
+        await FirebaseAuth.instance.signOut();
+
+        if (mounted) {
+          // context.go('/home'); // O mostra una SnackBar di successo e resta sulla pagina di login
+          // // per far accedere l'utente.
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registrazione avvenuta con successo! Effettua il login.')),
+          );
+        }
+
+      } on FirebaseAuthException catch (e) {
+        String errorMessage;
+        if (e.code == 'weak-password') {
+          errorMessage = 'La password fornita è troppo debole.';
+        } else if (e.code == 'email-already-in-use') {
+          errorMessage = 'L\'account esiste già per questa email.';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'L\'indirizzo email non è valido.';
+        } else {
+          errorMessage = 'Errore durante la registrazione: ${e.message}';
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMessage)),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Si è verificato un errore: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isRegistering = false;
+          });
+        }
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -141,7 +140,7 @@ class LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        title: const Text('Login / Registrazione'), // Titolo aggiornato
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
@@ -154,7 +153,7 @@ class LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
-                  'Pagina di login',
+                  'Accesso o Registrazione', // Testo aggiornato
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -164,37 +163,12 @@ class LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 30),
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Inserisci la tua email';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Email non valida';
-                    }
-                    return null;
-                  },
+                  // ... (configurazione TextFormField email esistente) ...
                 ),
                 const SizedBox(height: 20),
                 TextFormField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Inserisci la tua password';
-                    }
-                    return null;
-                  },
+                  // ... (configurazione TextFormField password esistente) ...
                 ),
                 const SizedBox(height: 30),
                 _isLoading
@@ -208,15 +182,20 @@ class LoginPageState extends State<LoginPage> {
                   ),
                   child: const Text('Login'),
                 ),
-                // ElevatedButton(
-                //   onPressed: _signInWithGoogle,
-                //   style: ElevatedButton.styleFrom(
-                //     padding: const EdgeInsets.symmetric(
-                //         horizontal: 50, vertical: 15),
-                //     textStyle: const TextStyle(fontSize: 16),
-                //   ),
-                //   child: const Text('Login Google'),
-                // ),
+                const SizedBox(height: 15), // Spazio tra i pulsanti
+                _isRegistering
+                    ? const CircularProgressIndicator()
+                    : ElevatedButton(
+                  onPressed: _register, // Chiama la nuova funzione di registrazione
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green, // Colore diverso per la registrazione
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 50, vertical: 15),
+                    textStyle: const TextStyle(fontSize: 16),
+                  ),
+                  child: const Text('Registrati'),
+                ),
+                // ... (Eventuale pulsante Google Sign-In) ...
               ],
             ),
           ),
