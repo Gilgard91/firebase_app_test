@@ -1,4 +1,3 @@
-// In router.dart
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,15 +9,15 @@ import 'login_page.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/login', // Potrebbe essere gestito dal redirect
+    initialLocation: '/login',
     routes: [
       GoRoute(
         path: '/login',
-        builder: (context, state) => const LoginPage(), // Aggiunto const
+        builder: (context, state) => const LoginPage(),
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const HomePage(), // Aggiunto const
+        builder: (context, state) => const HomePage(),
       ),
     ],
     redirect: (BuildContext context, GoRouterState state) {
@@ -37,15 +36,14 @@ class AppRouter {
         return '/home';
       }
 
-      // Nessun reindirizzamento necessario.
+      // Nessun reindirizzamento
       return null;
     },
-    // Aggiungi un refreshListenable per reagire ai cambiamenti dello stato di autenticazione
+    // refreshListenable per reagire ai cambiamenti dello stato di autenticazione
     refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
   );
 }
 
-// Classe helper per il refreshListenable
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();

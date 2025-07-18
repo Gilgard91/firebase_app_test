@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,8 +15,10 @@ class LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(serverClientId: 'test');
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
@@ -23,7 +26,6 @@ class LoginPageState extends State<LoginPage> {
         _isLoading = true;
       });
       try {
-        // Esegui il login con email e password
         UserCredential userCredential = await _auth.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
@@ -65,6 +67,69 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
+  // Future<void> _signInWithGoogle() async {
+  //   setState(() {
+  //     _isGoogleLoading = true;
+  //   });
+  //   try {
+  //     // Avvia il flusso di accesso con Google.
+  //     // Firebase Auth utilizzerà Credential Manager su Android quando disponibile.
+  //     final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+  //
+  //     if (googleUser == null) {
+  //       // L'utente ha annullato il flusso di accesso
+  //       if (mounted) {
+  //         setState(() {
+  //           _isGoogleLoading = false;
+  //         });
+  //       }
+  //       return;
+  //     }
+  //
+  //     // Ottieni i dettagli dell'autenticazione dalla richiesta.
+  //     final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+  //
+  //     // Crea una nuova credenziale Firebase.
+  //     final AuthCredential credential = GoogleAuthProvider.credential(
+  //       // accessToken: googleAuth.
+  //       idToken: googleAuth.idToken,
+  //     );
+  //
+  //     // Accedi a Firebase con la credenziale.
+  //     UserCredential userCredential = await _auth.signInWithCredential(credential);
+  //
+  //     if (mounted) {
+  //       // Naviga alla home page o alla pagina successiva
+  //       context.go('/home');
+  //     }
+  //   } on FirebaseAuthException catch (e) {
+  //     String errorMessage = 'Errore durante il login con Google: ${e.message}';
+  //     if (e.code == 'account-exists-with-different-credential') {
+  //       errorMessage = 'Esiste già un account con questa email ma con un metodo di accesso diverso.';
+  //     } else if (e.code == 'user-disabled') {
+  //       errorMessage = 'L\'account utente è stato disabilitato.';
+  //     }
+  //     // Aggiungi altri codici di errore specifici di FirebaseAuthException se necessario
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text(errorMessage)),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Si è verificato un errore imprevisto: $e')),
+  //       );
+  //     }
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         _isGoogleLoading = false;
+  //       });
+  //     }
+  //   }
+  // }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -89,7 +154,7 @@ class LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
-                  'Benvenuto!',
+                  'Pagina di login',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -107,7 +172,7 @@ class LoginPageState extends State<LoginPage> {
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Per favore, inserisci la tua email';
+                      return 'Inserisci la tua email';
                     }
                     if (!value.contains('@')) {
                       return 'Email non valida';
@@ -126,7 +191,7 @@ class LoginPageState extends State<LoginPage> {
                   obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Per favore, inserisci la tua password';
+                      return 'Inserisci la tua password';
                     }
                     return null;
                   },
@@ -143,6 +208,15 @@ class LoginPageState extends State<LoginPage> {
                   ),
                   child: const Text('Login'),
                 ),
+                // ElevatedButton(
+                //   onPressed: _signInWithGoogle,
+                //   style: ElevatedButton.styleFrom(
+                //     padding: const EdgeInsets.symmetric(
+                //         horizontal: 50, vertical: 15),
+                //     textStyle: const TextStyle(fontSize: 16),
+                //   ),
+                //   child: const Text('Login Google'),
+                // ),
               ],
             ),
           ),
