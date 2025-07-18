@@ -23,7 +23,6 @@ class LoginPageState extends State<LoginPage> {
         _isLoading = true;
       });
       try {
-        // Esegui il login con email e password
         UserCredential userCredential = await _auth.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
@@ -89,7 +88,7 @@ class LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
-                  'Benvenuto!',
+                  'Pagina di login',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -107,7 +106,7 @@ class LoginPageState extends State<LoginPage> {
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Per favore, inserisci la tua email';
+                      return 'Inserisci la tua email';
                     }
                     if (!value.contains('@')) {
                       return 'Email non valida';
@@ -126,7 +125,7 @@ class LoginPageState extends State<LoginPage> {
                   obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Per favore, inserisci la tua password';
+                      return 'Inserisci la tua password';
                     }
                     return null;
                   },

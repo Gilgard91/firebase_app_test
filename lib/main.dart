@@ -12,7 +12,7 @@ Future<void> main() async {
   );
   runApp(const MyApp());
 }
-//commento a caso111222
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override

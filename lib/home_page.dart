@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Importa FirebaseAuth
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,7 +10,7 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance; // Istanza di FirebaseAuth
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<void> _logout() async {
     try {
@@ -54,10 +54,9 @@ class HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              // Mostra l'email dell'utente se loggato
               user != null
-                  ? 'Benvenuto, ${user.email}!'
-                  : 'Benvenuto nella Homepage!',
+                  ? 'Benvenuto, ${user.email}'
+                  : 'Pagina homepage',
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
