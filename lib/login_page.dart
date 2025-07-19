@@ -32,6 +32,8 @@ class LoginPageState extends State<LoginPage> {
           password: _passwordController.text.trim(),
         );
 
+        debugPrint("userId: ${userCredential.user!.uid}");
+
         if (mounted) {
           context.go('/home');
         }
@@ -74,24 +76,15 @@ class LoginPageState extends State<LoginPage> {
         _isRegistering = true;
       });
       try {
-        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+
+        await _auth.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        // Opzionale: puoi salvare informazioni aggiuntive dell'utente
-        // nel database Firestore o Realtime Database qui.
-        // Esempio:
-        // await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        //   'email': _emailController.text.trim(),
-        //   // altri campi...
-        // });
-
         await FirebaseAuth.instance.signOut();
 
         if (mounted) {
-          // context.go('/home'); // O mostra una SnackBar di successo e resta sulla pagina di login
-          // // per far accedere l'utente.
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Registrazione avvenuta con successo! Effettua il login.')),
           );
@@ -129,6 +122,7 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -161,14 +155,26 @@ class LoginPageState extends State<LoginPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 30),
-                TextFormField(
-                  controller: _emailController,
-                  // ... (configurazione TextFormField email esistente) ...
+                // TextFormField(
+                //   controller: _emailController,
+                //   // ... (configurazione TextFormField email esistente) ...
+                // ),
+                SizedBox(
+                  width: 270,
+                  child: TextField(
+                    obscureText: false,
+                    decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Email'),
+                    controller: _emailController,
+                  ),
                 ),
                 const SizedBox(height: 20),
-                TextFormField(
-                  controller: _passwordController,
-                  // ... (configurazione TextFormField password esistente) ...
+                SizedBox(
+                  width: 270,
+                  child: TextField(
+                    obscureText: true,
+                    decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Password'),
+                    controller: _passwordController,
+                  ),
                 ),
                 const SizedBox(height: 30),
                 _isLoading
