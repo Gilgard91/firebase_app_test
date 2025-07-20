@@ -12,6 +12,9 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _birthYearController = TextEditingController();
 
   Future<void> _logout() async {
     try {
@@ -31,6 +34,13 @@ class HomePageState extends State<HomePage> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _birthYearController.dispose();
+    super.dispose();
+  }
+
   Widget _buildList(BuildContext context, DocumentSnapshot doc) {
     return Column(
       children: [
@@ -40,6 +50,112 @@ class HomePageState extends State<HomePage> {
           ]),
         ),
       ],
+    );
+  }
+
+  Future<void> addMusician(String name, int birthYear) async {
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Devi essere loggato per aggiungere un elemento.')),
+        );
+      }
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('Musicisti').add({
+        'Nome': name,
+        'Anno di nascita': birthYear,
+        'userId': user.uid,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Elemento aggiunto con successo!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore durante l\'aggiunta dell\'elemento: $e')),
+        );
+      }
+      print('Errore durante l\'aggiunta dell\'elemento: $e');
+    }
+  }
+
+  Future<void> _showAddMusicianDialog() async {
+    _nameController.clear();
+    _birthYearController.clear();
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Aggiungi Nuovo elemento'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: ListBody(
+                children: <Widget>[
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(labelText: 'Nome'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Per favore, inserisci un nome.';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: _birthYearController,
+                    decoration: const InputDecoration(labelText: 'Anno di nascita'),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Per favore, inserisci l\'anno di nascita.';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Per favore, inserisci un numero valido.';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Annulla'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              child: const Text('Aggiungi'),
+              onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  final String name = _nameController.text;
+                  final int? birthYear = int.tryParse(_birthYearController.text);
+
+                  if (birthYear != null) {
+                    addMusician(name, birthYear);
+                    Navigator.of(context).pop();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Anno di nascita non valido.')),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -58,15 +174,26 @@ class HomePageState extends State<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              user != null ? 'Benvenuto, ${user.email}' : 'Pagina homepage',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                user != null ? 'Benvenuto, ${user.email}' : 'Pagina homepage',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
             ),
             Expanded(
               child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance.collection('Musicisti').snapshots(),
+                stream: user != null
+                    ? FirebaseFirestore.instance
+                    .collection('Musicisti')
+                    .where('userId', isEqualTo: user.uid)
+                    .snapshots()
+                    : Stream.empty(),
                 builder: (context, snapshot) {
+                  if (user == null) {
+                    return const Center(child: Text('Effettua il login per vedere i tuoi elementi.'));
+                  }
                   if (snapshot.hasError) {
                     return Text('Errore: ${snapshot.error}');
                   }
@@ -74,17 +201,24 @@ class HomePageState extends State<HomePage> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('Nessun musicista trovato.'));
+                    return const Center(child: Text('Nessun elemento trovato. Tocca "+" per aggiungerne uno.'));
                   }
                   return ListView.builder(
                     itemCount: snapshot.data!.docs.length,
-                    itemBuilder: (context, index) => _buildList(context, snapshot.data!.docs[index]),
+                    itemBuilder: (context, index) =>
+                        _buildList(context, snapshot.data!.docs[index]),
                   );
                 },
               ),
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddMusicianDialog,
+        tooltip: 'Aggiungi Elemento',
+        backgroundColor: Colors.green,
+        child: const Icon(Icons.add),
       ),
     );
   }
