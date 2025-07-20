@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,11 +14,9 @@ class LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isGoogleLoading = false;
   bool _isRegistering = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // final GoogleSignIn _googleSignIn = GoogleSignIn(serverClientId: 'test');
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
@@ -155,10 +152,6 @@ class LoginPageState extends State<LoginPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 30),
-                // TextFormField(
-                //   controller: _emailController,
-                //   // ... (configurazione TextFormField email esistente) ...
-                // ),
                 SizedBox(
                   width: 270,
                   child: TextField(
@@ -188,18 +181,18 @@ class LoginPageState extends State<LoginPage> {
                   ),
                   child: const Text('Login'),
                 ),
-                const SizedBox(height: 15), // Spazio tra i pulsanti
+                const SizedBox(height: 15),
                 _isRegistering
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
-                  onPressed: _register, // Chiama la nuova funzione di registrazione
+                  onPressed: _register,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green, // Colore diverso per la registrazione
+                    backgroundColor: Colors.blueAccent,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 50, vertical: 15),
                     textStyle: const TextStyle(fontSize: 16),
                   ),
-                  child: const Text('Registrati'),
+                  child: const Text('Registrati', style: TextStyle(color: Colors.white),),
                 ),
                 // ... (Eventuale pulsante Google Sign-In) ...
               ],
