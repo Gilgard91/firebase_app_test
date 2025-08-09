@@ -1,7 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
+import 'auth/bloc/auth_bloc.dart';
+import 'auth/bloc/auth_event.dart';
+import 'auth/bloc/auth_state.dart';
+import 'element/bloc/musician.dart';
+import 'element/bloc/musician_bloc.dart';
+import 'element/bloc/musician_event.dart';
+import 'element/bloc/musician_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,27 +18,20 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _birthYearController = TextEditingController();
 
-  Future<void> _logout() async {
-    try {
-      await _auth.signOut();
-      if (mounted) {
-        context.go('/login');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore durante il logout: $e')));
-      }
-    }
-  }
-
   @override
   void initState() {
     super.initState();
+    // Avvia la sottoscrizione ai musicisti quando la pagina si carica
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      context.read<MusiciansBloc>().add(
+        MusiciansSubscriptionRequested(userId: authState.userId),
+      );
+    }
   }
 
   @override
@@ -41,47 +41,25 @@ class HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  Widget _buildList(BuildContext context, DocumentSnapshot doc) {
-    return Column(
-      children: [
-        ListTile(
-          title: Row(children: [
-            Expanded(child: Text("${doc['Nome']} - ${doc['Anno di nascita'].toString()}"))
-          ]),
-        ),
-      ],
-    );
+  void _logout() {
+    context.read<AuthBloc>().add(AuthLogoutRequested());
   }
 
-  Future<void> addMusician(String name, int birthYear) async {
-    final User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Devi essere loggato per aggiungere un elemento.')),
-        );
-      }
-      return;
-    }
+  void _addMusician() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      final name = _nameController.text.trim();
+      final birthYear = int.tryParse(_birthYearController.text.trim());
 
-    try {
-      await FirebaseFirestore.instance.collection('Musicisti').add({
-        'Nome': name,
-        'Anno di nascita': birthYear,
-        'userId': user.uid,
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Elemento aggiunto con successo!')),
+      if (name.isNotEmpty && birthYear != null) {
+        context.read<MusiciansBloc>().add(
+          AddMusician(
+            name: name,
+            birthYear: birthYear,
+            userId: authState.userId,
+          ),
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore durante l\'aggiunta dell\'elemento: $e')),
-        );
-      }
-      print('Errore durante l\'aggiunta dell\'elemento: $e');
     }
   }
 
@@ -92,9 +70,9 @@ class HomePageState extends State<HomePage> {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Aggiungi Nuovo elemento'),
+          title: const Text('Aggiungi Nuovo Musicista'),
           content: SingleChildScrollView(
             child: Form(
               key: _formKey,
@@ -132,25 +110,39 @@ class HomePageState extends State<HomePage> {
             TextButton(
               child: const Text('Annulla'),
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop();
               },
             ),
-            ElevatedButton(
-              child: const Text('Aggiungi'),
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final String name = _nameController.text;
-                  final int? birthYear = int.tryParse(_birthYearController.text);
-
-                  if (birthYear != null) {
-                    addMusician(name, birthYear);
-                    Navigator.of(context).pop();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Anno di nascita non valido.')),
-                    );
-                  }
+            BlocConsumer<MusiciansBloc, MusiciansState>(
+              listener: (context, state) {
+                if (state is MusicianAdded) {
+                  Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message)),
+                  );
+                } else if (state is MusiciansError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message)),
+                  );
                 }
+              },
+              builder: (context, state) {
+                return ElevatedButton(
+                  onPressed: state is MusiciansLoading
+                      ? null
+                      : () {
+                    if (_formKey.currentState!.validate()) {
+                      _addMusician();
+                    }
+                  },
+                  child: state is MusiciansLoading
+                      ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Text('Aggiungi'),
+                );
               },
             ),
           ],
@@ -159,54 +151,133 @@ class HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildMusicianItem(Musician musician) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        title: Text(musician.name),
+        subtitle: Text('Anno di nascita: ${musician.birthYear}'),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () {
+            context.read<MusiciansBloc>().add(
+              DeleteMusician(musicianId: musician.id),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final User? user = _auth.currentUser;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Homepage'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
-        actions: [IconButton(icon: const Icon(Icons.logout), tooltip: 'Logout', onPressed: _logout)],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: _logout,
+          )
+        ],
       ),
-      body: Center(
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) {
+              if (state is AuthUnauthenticated) {
+                context.go('/login');
+              } else if (state is AuthError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(state.message)),
+                );
+              }
+            },
+          ),
+          BlocListener<MusiciansBloc, MusiciansState>(
+            listener: (context, state) {
+              if (state is MusiciansError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(state.message)),
+                );
+              }
+            },
+          ),
+        ],
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                user != null ? 'Benvenuto, ${user.email}' : 'Pagina homepage',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
+            // Header con informazioni utente
+            BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                if (state is AuthAuthenticated) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'Benvenuto, ${state.email}',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
+
+            // Lista musicisti
             Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: user != null
-                    ? FirebaseFirestore.instance
-                    .collection('Musicisti')
-                    .where('userId', isEqualTo: user.uid)
-                    .snapshots()
-                    : Stream.empty(),
-                builder: (context, snapshot) {
-                  if (user == null) {
-                    return const Center(child: Text('Effettua il login per vedere i tuoi elementi.'));
-                  }
-                  if (snapshot.hasError) {
-                    return Text('Errore: ${snapshot.error}');
-                  }
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+              child: BlocBuilder<MusiciansBloc, MusiciansState>(
+                builder: (context, state) {
+                  if (state is MusiciansLoading) {
                     return const Center(child: CircularProgressIndicator());
+                  } else if (state is MusiciansLoaded) {
+                    if (state.musicians.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'Nessun musicista trovato.\nTocca "+" per aggiungerne uno.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      itemCount: state.musicians.length,
+                      itemBuilder: (context, index) {
+                        return _buildMusicianItem(state.musicians[index]);
+                      },
+                    );
+                  } else if (state is MusiciansError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Errore: ${state.message}',
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              final authState = context.read<AuthBloc>().state;
+                              if (authState is AuthAuthenticated) {
+                                context.read<MusiciansBloc>().add(
+                                  LoadMusicians(userId: authState.userId),
+                                );
+                              }
+                            },
+                            child: const Text('Riprova'),
+                          ),
+                        ],
+                      ),
+                    );
                   }
-                  if (snapshot.data == null || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('Nessun elemento trovato. Tocca "+" per aggiungerne uno.'));
-                  }
-                  return ListView.builder(
-                    itemCount: snapshot.data!.docs.length,
-                    itemBuilder: (context, index) =>
-                        _buildList(context, snapshot.data!.docs[index]),
+                  return const Center(
+                    child: Text('Effettua il login per vedere i tuoi musicisti.'),
                   );
                 },
               ),
@@ -214,11 +285,18 @@ class HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddMusicianDialog,
-        tooltip: 'Aggiungi Elemento',
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.add),
+      floatingActionButton: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          if (state is AuthAuthenticated) {
+            return FloatingActionButton(
+              onPressed: _showAddMusicianDialog,
+              tooltip: 'Aggiungi Musicista',
+              backgroundColor: Colors.green,
+              child: const Icon(Icons.add),
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
