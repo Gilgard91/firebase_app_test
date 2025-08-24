@@ -58,10 +58,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ) async {
     emit(AuthLoading(message: 'Registrazione in corso...'));
     try {
-      await _firebaseAuth.createUserWithEmailAndPassword(
+      // Crea l'utente
+      final UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: event.email.trim(),
         password: event.password.trim(),
       );
+
+      // Aggiorna il displayName dell'utente
+      await userCredential.user?.updateDisplayName(event.name?.trim());
+
+      // Ricarica l'utente per aggiornare i dati
+      await userCredential.user?.reload();
 
       await _firebaseAuth.signOut();
       emit(const AuthRegistrationSuccess(

@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'auth/bloc/auth_bloc.dart';
 import 'auth/bloc/auth_state.dart';
 import 'core/theme/app_theme.dart';
-import 'element/bloc/musician_bloc.dart';
+import 'element/bloc/book_bloc.dart';
 import 'firebase_options.dart';
 import 'home_page.dart';
 import 'login_page.dart';
@@ -36,8 +36,8 @@ class MyApp extends StatelessWidget {
         BlocProvider<AuthBloc>(
           create: (context) => AuthBloc(),
         ),
-        BlocProvider<MusiciansBloc>(
-          create: (context) => MusiciansBloc(),
+        BlocProvider<BooksBloc>(
+          create: (context) => BooksBloc(),
         ),
         BlocProvider<ConnectionBloc>(
           create: (context) => ConnectionBloc(),

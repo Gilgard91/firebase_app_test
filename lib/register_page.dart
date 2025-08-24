@@ -42,6 +42,7 @@ class RegisterPageState extends State<RegisterPage> {
         AuthRegisterRequested(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
+          name: _nameController.text.trim(),
         ),
       );
       context.pop();

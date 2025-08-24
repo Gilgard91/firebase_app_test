@@ -19,6 +19,7 @@ class AuthAuthenticated extends AuthState {
   final String userId;
   final String email;
 
+
   const AuthAuthenticated({required this.userId, required this.email});
 
   @override

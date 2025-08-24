@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:go_router/go_router.dart';
 
 import 'auth/bloc/auth_bloc.dart';
 import 'auth/bloc/auth_event.dart';
 import 'auth/bloc/auth_state.dart';
-import 'element/bloc/musician.dart';
-import 'element/bloc/musician_bloc.dart';
-import 'element/bloc/musician_event.dart';
-import 'element/bloc/musician_state.dart';
+import 'element/bloc/book.dart';
+import 'element/bloc/book_bloc.dart';
+import 'element/bloc/book_event.dart';
+import 'element/bloc/book_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,9 +31,10 @@ class HomePageState extends State<HomePage> {
     final authState = context.read<AuthBloc>().state;
     // final authState = BlocProvider.of<AuthBloc>(context).state;
     if (authState is AuthAuthenticated) {
-      context.read<MusiciansBloc>().add(
-        MusiciansSubscriptionRequested(userId: authState.userId),
+      context.read<BooksBloc>().add(
+        LoadBooks(userId: authState.userId),
       );
+
     }
   }
 
@@ -47,15 +49,15 @@ class HomePageState extends State<HomePage> {
     context.read<AuthBloc>().add(AuthLogoutRequested());
   }
 
-  void _addMusician() {
+  void _addBook() {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
       final name = _nameController.text.trim();
       final birthYear = int.tryParse(_birthYearController.text.trim());
 
       if (name.isNotEmpty && birthYear != null) {
-        context.read<MusiciansBloc>().add(
-          AddMusician(
+        context.read<BooksBloc>().add(
+          AddBook(
             name: name,
             birthYear: birthYear,
             userId: authState.userId,
@@ -65,7 +67,7 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _showAddMusicianDialog() async {
+  Future<void> _showAddBookDialog() async {
     _nameController.clear();
     _birthYearController.clear();
 
@@ -74,7 +76,7 @@ class HomePageState extends State<HomePage> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Aggiungi Nuovo Musicista'),
+          title: const Text('Aggiungi Nuovo Libro'),
           content: SingleChildScrollView(
             child: Form(
               key: _formKey,
@@ -115,14 +117,14 @@ class HomePageState extends State<HomePage> {
                 Navigator.of(dialogContext).pop();
               },
             ),
-            BlocConsumer<MusiciansBloc, MusiciansState>(
+            BlocConsumer<BooksBloc, BooksState>(
               listener: (context, state) {
-                if (state is MusicianAdded) {
+                if (state is BookAdded) {
                   Navigator.of(dialogContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(state.message)),
                   );
-                } else if (state is MusiciansError) {
+                } else if (state is BooksError) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(state.message)),
                   );
@@ -130,14 +132,17 @@ class HomePageState extends State<HomePage> {
               },
               builder: (context, state) {
                 return ElevatedButton(
-                  onPressed: state is MusiciansLoading
+                  onPressed: state is BooksLoading
                       ? null
                       : () {
                     if (_formKey.currentState!.validate()) {
-                      _addMusician();
+                      _addBook();
+                      context.read<BooksBloc>().add(
+                        LoadBooks(),
+                      );
                     }
                   },
-                  child: state is MusiciansLoading
+                  child: state is BooksLoading
                       ? const SizedBox(
                     width: 16,
                     height: 16,
@@ -153,21 +158,265 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMusicianItem(Musician musician) {
+  // Widget _buildBookItem(Book book) {
+  //   return Card(
+  //     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+  //     child: ListTile(
+  //       title: Text(book.title!),
+  //       subtitle: Text('Autore: ${book.author}'),
+  //       trailing: IconButton(
+  //         icon: const Icon(Icons.delete, color: Colors.red),
+  //         onPressed: () {
+  //           context.read<BooksBloc>().add(
+  //             DeleteBook(bookId: book.id!),
+  //           );
+  //         },
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildBookItem(Book book) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
-        title: Text(musician.name),
-        subtitle: Text('Anno di nascita: ${musician.birthYear}'),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete, color: Colors.red),
-          onPressed: () {
-            context.read<MusiciansBloc>().add(
-              DeleteMusician(musicianId: musician.id),
-            );
-          },
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white,
+              Colors.blue.shade50,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header con titolo e pulsante elimina
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      book.title ?? 'Titolo non disponibile',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2C3E50),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Colors.red,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      _showDeleteConfirmation(context, book);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Autore
+              Row(
+                children: [
+                  Icon(
+                    Icons.person_outline,
+                    size: 18,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      book.author?.isNotEmpty == true
+                          ? book.author!
+                          : 'Autore sconosciuto',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Descrizione (se presente)
+              if (book.description?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey.shade300,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        size: 18,
+                        color: Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          book.description!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade700,
+                            height: 1.4,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Footer con ID (opzionale, per debug)
+              if (book.id != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'ID: ${book.id}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+// Metodo helper per la conferma di eliminazione
+  void _showDeleteConfirmation(BuildContext context, Book book) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return BlocListener<BooksBloc, BooksState>(
+          listener: (context, state) {
+            // Ascolta i cambiamenti di stato
+            if (state is BooksLoaded && state.isDeleting != true) {
+              // Se i libri sono stati ricaricati e non siamo più in fase di eliminazione
+              context.pop();
+            } else if (state is BooksError) {
+              // In caso di errore, chiudi il dialog e mostra l'errore
+              context.pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_outlined, color: Colors.orange),
+                SizedBox(width: 12),
+                Text('Conferma eliminazione'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Sei sicuro di voler eliminare il libro "${book.title}"?',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                // mostra un indicatore di caricamento se stiamo eliminando
+                BlocBuilder<BooksBloc, BooksState>(
+                  builder: (context, state) {
+                    if (state is BooksLoaded && state.isDeleting == true) {
+                      return const Padding(
+                        padding: EdgeInsets.only(top: 16.0),
+                        child: LinearProgressIndicator(),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              BlocBuilder<BooksBloc, BooksState>(
+                builder: (context, state) {
+                  final isDeleting = state is BooksLoaded && state.isDeleting == true;
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: isDeleting ? null : () => Navigator.of(context).pop(),
+                        child: Text(
+                          'Annulla',
+                          style: TextStyle(
+                            color: isDeleting ? Colors.grey : Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: isDeleting ? null : () {
+                          // Usa DeleteBookAndReload invece di due eventi separati
+                          context.read<BooksBloc>().add(
+                            DeleteBookAndReload(bookId: book.id!),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDeleting ? Colors.grey : Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: isDeleting
+                            ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                            : const Text('Elimina'),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -201,9 +450,9 @@ class HomePageState extends State<HomePage> {
               }
             },
           ),
-          BlocListener<MusiciansBloc, MusiciansState>(
+          BlocListener<BooksBloc, BooksState>(
             listener: (context, state) {
-              if (state is MusiciansError) {
+              if (state is BooksError) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(state.message)),
                 );
@@ -234,29 +483,29 @@ class HomePageState extends State<HomePage> {
               },
             ),
 
-            // Lista musicisti
+            // Lista libri
             Expanded(
-              child: BlocBuilder<MusiciansBloc, MusiciansState>(
+              child: BlocBuilder<BooksBloc, BooksState>(
                 builder: (context, state) {
-                  if (state is MusiciansLoading) {
+                  if (state is BooksLoading) {
                     return const Center(child: CircularProgressIndicator());
-                  } else if (state is MusiciansLoaded) {
-                    if (state.musicians.isEmpty) {
+                  } else if (state is BooksLoaded) {
+                    if (state.books.isEmpty) {
                       return const Center(
                         child: Text(
-                          'Nessun musicista trovato.\nTocca "+" per aggiungerne uno.',
+                          'Nessun libro trovato.\nTocca "+" per aggiungerne uno.',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 16),
                         ),
                       );
                     }
                     return ListView.builder(
-                      itemCount: state.musicians.length,
+                      itemCount: state.books.length,
                       itemBuilder: (context, index) {
-                        return _buildMusicianItem(state.musicians[index]);
+                        return _buildBookItem(state.books[index]);
                       },
                     );
-                  } else if (state is MusiciansError) {
+                  } else if (state is BooksError) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -270,8 +519,8 @@ class HomePageState extends State<HomePage> {
                             onPressed: () {
                               final authState = context.read<AuthBloc>().state;
                               if (authState is AuthAuthenticated) {
-                                context.read<MusiciansBloc>().add(
-                                  LoadMusicians(userId: authState.userId),
+                                context.read<BooksBloc>().add(
+                                  LoadBooks(userId: authState.userId),
                                 );
                               }
                             },
@@ -282,7 +531,7 @@ class HomePageState extends State<HomePage> {
                     );
                   }
                   return const Center(
-                    child: Text('Effettua il login per vedere i tuoi musicisti.'),
+                    child: Text('Effettua il login per vedere i tuoi libri.'),
                   );
                 },
               ),
@@ -293,16 +542,37 @@ class HomePageState extends State<HomePage> {
       floatingActionButton: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is AuthAuthenticated) {
-            return FloatingActionButton(
-              onPressed: _showAddMusicianDialog,
-              tooltip: 'Aggiungi Musicista',
-              backgroundColor: Colors.green,
-              child: const Icon(Icons.add),
+            return SpeedDial(
+              animatedIcon: AnimatedIcons.menu_close,
+              backgroundColor: Colors.blue,
+              overlayColor: Colors.black,
+              overlayOpacity: 0.4,
+              children: [
+                SpeedDialChild(
+                  child: const Icon(Icons.refresh),
+                  label: 'Aggiorna',
+                  backgroundColor: Colors.blue,
+                  onTap: () {
+
+                      context.read<BooksBloc>().add(
+                        LoadBooks(),
+                      );
+
+                  },
+                ),
+                SpeedDialChild(
+                  child: const Icon(Icons.add),
+                  label: 'Aggiungi libro',
+                  backgroundColor: Colors.green,
+                  onTap: _showAddBookDialog,
+                ),
+              ],
             );
           }
           return const SizedBox.shrink();
         },
       ),
+
     );
   }
 }
