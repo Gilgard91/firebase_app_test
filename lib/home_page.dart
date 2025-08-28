@@ -423,155 +423,227 @@ class HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final AuthBloc authBloc = context.read<AuthBloc>();
 
-    return Scaffold(
-      appBar: AppBar(
-        // title: const Text('Homepage'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: _logout,
-          )
-        ],
-      ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<AuthBloc, AuthState>(
-            listener: (context, state) {
-              if (state is AuthUnauthenticated) {
-                context.go('/login');
-              } else if (state is AuthError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(state.message)),
-                );
-              }
-            },
-          ),
-          BlocListener<BooksBloc, BooksState>(
-            listener: (context, state) {
-              if (state is BooksError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(state.message)),
-                );
-              }
-            },
-          ),
-        ],
-        child: Column(
-          children: [
-            // Header con informazioni utente
-            BlocBuilder<AuthBloc, AuthState>(
-              bloc: authBloc,
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      'Benvenuto, ${state.email}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        body: MultiBlocListener(
+          listeners: [
+            BlocListener<AuthBloc, AuthState>(
+              listener: (context, state) {
+                if (state is AuthUnauthenticated) {
+                  context.go('/login');
+                } else if (state is AuthError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message)),
                   );
                 }
-                return const SizedBox.shrink();
               },
             ),
-
-            // Lista libri
-            Expanded(
-              child: BlocBuilder<BooksBloc, BooksState>(
+            BlocListener<BooksBloc, BooksState>(
+              listener: (context, state) {
+                if (state is BooksError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message)),
+                  );
+                }
+              },
+            ),
+          ],
+          child: CustomScrollView(
+            slivers: [
+              // SliverAppBar sostituisce AppBar
+              SliverAppBar(
+                backgroundColor: Colors.deepPurpleAccent,
+                foregroundColor: Colors.white,
+                pinned: true, // Rimane sempre visibile
+                expandedHeight: 120, // Altezza quando espansa
+                flexibleSpace: FlexibleSpaceBar(
+                  // Puoi aggiungere un background o altri elementi qui
+                  centerTitle: true,
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.logout),
+                    tooltip: 'Logout',
+                    onPressed: _logout,
+                  )
+                ],
+              ),
+      
+              // Header con informazioni utente
+              BlocBuilder<AuthBloc, AuthState>(
+                bloc: authBloc,
                 builder: (context, state) {
-                  if (state is BooksLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (state is BooksLoaded) {
-                    if (state.books.isEmpty) {
-                      return const Center(
+                  if (state is AuthAuthenticated) {
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
                         child: Text(
-                          'Nessun libro trovato.\nTocca "+" per aggiungerne uno.',
+                          'Benvenuto, ${state.email}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16),
                         ),
-                      );
-                    }
-                    return ListView.builder(
-                      itemCount: state.books.length,
-                      itemBuilder: (context, index) {
-                        return _buildBookItem(state.books[index]);
-                      },
-                    );
-                  } else if (state is BooksError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Errore: ${state.message}',
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              final authState = context.read<AuthBloc>().state;
-                              if (authState is AuthAuthenticated) {
-                                context.read<BooksBloc>().add(
-                                  LoadBooks(userId: authState.userId),
-                                );
-                              }
-                            },
-                            child: const Text('Riprova'),
-                          ),
-                        ],
                       ),
                     );
                   }
-                  return const Center(
-                    child: Text('Effettua il login per vedere i tuoi libri.'),
+                  return const SliverToBoxAdapter(child: SizedBox.shrink());
+                },
+              ),
+      
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: MyStickyHeaderDelegate(
+                  child: Container(
+                    color: Colors.green,
+                    child: Center(child: Text('LIBRI', style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),)),
+                  ),
+                ),
+              ),
+              
+      
+              // Lista libri con SliverList
+              BlocBuilder<BooksBloc, BooksState>(
+                builder: (context, state) {
+                  if (state is BooksLoading) {
+                    return const SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(50.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                    );
+                  } else if (state is BooksLoaded) {
+                    if (state.books.isEmpty) {
+                      return const SliverToBoxAdapter(
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(50.0),
+                            child: Text(
+                              'Nessun libro trovato.\nTocca "+" per aggiungerne uno.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                          return _buildBookItem(state.books[index]);
+                        },
+                        childCount: state.books.length,
+                      ),
+                    );
+                  } else if (state is BooksError) {
+                    return SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(50.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Errore: ${state.message}',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final authState = context.read<AuthBloc>().state;
+                                  if (authState is AuthAuthenticated) {
+                                    context.read<BooksBloc>().add(
+                                      LoadBooks(userId: authState.userId),
+                                    );
+                                  }
+                                },
+                                child: const Text('Riprova'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return const SliverToBoxAdapter(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(50.0),
+                        child: Text('Effettua il login per vedere i tuoi libri.'),
+                      ),
+                    ),
                   );
                 },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          if (state is AuthAuthenticated) {
-            return SpeedDial(
-              animatedIcon: AnimatedIcons.menu_close,
-              backgroundColor: Colors.blue,
-              overlayColor: Colors.black,
-              overlayOpacity: 0.4,
-              children: [
-                SpeedDialChild(
-                  child: const Icon(Icons.refresh),
-                  label: 'Aggiorna',
-                  backgroundColor: Colors.blue,
-                  onTap: () {
-
+        floatingActionButton: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            if (state is AuthAuthenticated) {
+              return SpeedDial(
+                animatedIcon: AnimatedIcons.menu_close,
+                backgroundColor: Colors.blue,
+                overlayColor: Colors.black,
+                overlayOpacity: 0.4,
+                children: [
+                  SpeedDialChild(
+                    child: const Icon(Icons.refresh),
+                    label: 'Aggiorna',
+                    backgroundColor: Colors.blue,
+                    onTap: () {
                       context.read<BooksBloc>().add(
                         LoadBooks(),
                       );
-
-                  },
-                ),
-                SpeedDialChild(
-                  child: const Icon(Icons.add),
-                  label: 'Aggiungi libro',
-                  backgroundColor: Colors.green,
-                  onTap: _showAddBookDialog,
-                ),
-              ],
-            );
-          }
-          return const SizedBox.shrink();
-        },
+                    },
+                  ),
+                  SpeedDialChild(
+                    child: const Icon(Icons.add),
+                    label: 'Aggiungi libro',
+                    backgroundColor: Colors.green,
+                    onTap: _showAddBookDialog,
+                  ),
+                ],
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
       ),
-
     );
+  }
+}
+
+class MyStickyHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  MyStickyHeaderDelegate({
+    required this.child,
+    this.height = 60.0,
+  });
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(MyStickyHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child || oldDelegate.height != height;
   }
 }
