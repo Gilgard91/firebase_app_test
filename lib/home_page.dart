@@ -386,7 +386,6 @@ class HomePageState extends State<HomePage> {
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: isDeleting ? null : () {
-                          // Usa DeleteBookAndReload invece di due eventi separati
                           context.read<BooksBloc>().add(
                             DeleteBookAndReload(bookId: book.id!),
                           );
