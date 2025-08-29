@@ -17,7 +17,7 @@ class BooksBloc extends Bloc<BooksEvent, BooksState> {
         super(BooksInitial()) {
 
     on<LoadBooks>(_onLoadBooks);
-    // on<AddBook>(_onAddBook);
+    on<AddBook>(_onAddBook);
     on<DeleteBook>(_onDeleteBook);
     on<DeleteBookAndReload>(_onDeleteBookAndReload);
     // on<BooksSubscriptionRequested>(_onSubscriptionRequested);
@@ -64,40 +64,37 @@ class BooksBloc extends Bloc<BooksEvent, BooksState> {
     }
   }
 
-  // Future<void> _onAddBook(
-  //     AddBook event,
-  //     Emitter<BooksState> emit,
-  //     ) async {
-  //   try {
-  //     final Book = Book(
-  //       id: '', // Firestore genererà l'ID
-  //       name: event.name,
-  //       birthYear: event.birthYear,
-  //       userId: event.userId,
-  //     );
-  //
-  //     await _firestore.collection('Musicisti').add(Book.toFirestore());
-  //
-  //     // Mantieni la lista corrente e aggiungi il messaggio di successo
-  //     final currentState = state;
-  //     if (currentState is BooksLoaded) {
-  //       emit(BookAdded(
-  //         message: 'Musicista aggiunto con successo!',
-  //         Books: currentState.Books,
-  //       ));
-  //     } else {
-  //       emit(const BookAdded(
-  //         message: 'Musicista aggiunto con successo!',
-  //         Books: [],
-  //       ));
-  //     }
-  //
-  //     // Lo stream si aggiornerà automaticamente con i nuovi dati
-  //   } catch (e) {
-  //     emit(BooksError(message: 'Errore nell\'aggiunta: $e'));
-  //   }
-  // }
-  //
+  Future<void> _onAddBook(
+      AddBook event,
+      Emitter<BooksState> emit,
+      ) async {
+    try {
+      final book = Book(
+        title: event.title,
+        author: event.author,
+        description: event.description,
+      );
+
+      await BookApiService.addBook(book);
+
+      final currentState = state;
+      if (currentState is BooksLoaded) {
+        final updatedBooks = [...currentState.books, book];
+        emit(BookAdded(
+          message: 'Libro aggiunto con successo!',
+          books: updatedBooks,
+        ));
+      } else {
+        emit(BookAdded(
+          message: 'Libro aggiunto con successo!',
+          books: [book],
+        ));
+      }
+    } catch (e) {
+      emit(BooksError(message: 'Errore nell\'aggiunta: $e'));
+    }
+  }
+
   Future<void> _onDeleteBook(
       DeleteBook event,
       Emitter<BooksState> emit,

@@ -33,8 +33,9 @@ class AuthLogoutRequested extends AuthEvent {}
 class AuthStatusChanged extends AuthEvent {
   final bool isAuthenticated;
   final String? userId;
+  final String name;
 
-  const AuthStatusChanged({required this.isAuthenticated, this.userId});
+  const AuthStatusChanged({required this.isAuthenticated, this.userId, required this.name});
 
   @override
   List<Object?> get props => [isAuthenticated, userId];

@@ -20,14 +20,14 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _birthYearController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _authorController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController(text: '');
 
 
   @override
   void initState() {
     super.initState();
-    // Avvia la sottoscrizione ai musicisti quando la pagina si carica
     final authState = context.read<AuthBloc>().state;
     // final authState = BlocProvider.of<AuthBloc>(context).state;
     if (authState is AuthAuthenticated) {
@@ -40,8 +40,9 @@ class HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _birthYearController.dispose();
+    _titleController.dispose();
+    _authorController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -52,15 +53,16 @@ class HomePageState extends State<HomePage> {
   void _addBook() {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
-      final name = _nameController.text.trim();
-      final birthYear = int.tryParse(_birthYearController.text.trim());
+      final title = _titleController.text.trim();
+      final author = _authorController.text.trim();
+      final description = _descriptionController.text.trim();
 
-      if (name.isNotEmpty && birthYear != null) {
+      if (title.isNotEmpty && author.isNotEmpty) {
         context.read<BooksBloc>().add(
           AddBook(
-            name: name,
-            birthYear: birthYear,
-            userId: authState.userId,
+            title: title,
+            author: author,
+            description: description,
           ),
         );
       }
@@ -68,8 +70,9 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _showAddBookDialog() async {
-    _nameController.clear();
-    _birthYearController.clear();
+    _titleController.clear();
+    _authorController.clear();
+    _descriptionController.clear();
 
     return showDialog<void>(
       context: context,
@@ -83,28 +86,30 @@ class HomePageState extends State<HomePage> {
               child: ListBody(
                 children: <Widget>[
                   TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Nome'),
+                    controller: _titleController,
+                    decoration: const InputDecoration(labelText: 'Titolo'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Per favore, inserisci un nome.';
+                        return 'Per favore, inserisci un titolo.';
                       }
                       return null;
                     },
                   ),
+                  SizedBox(height: 15,),
                   TextFormField(
-                    controller: _birthYearController,
-                    decoration: const InputDecoration(labelText: 'Anno di nascita'),
-                    keyboardType: TextInputType.number,
+                    controller: _authorController,
+                    decoration: const InputDecoration(labelText: 'Autore'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Per favore, inserisci l\'anno di nascita.';
-                      }
-                      if (int.tryParse(value) == null) {
-                        return 'Per favore, inserisci un numero valido.';
+                        return 'Per favore, inserisci un autore.';
                       }
                       return null;
                     },
+                  ),
+                  SizedBox(height: 15,),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(labelText: 'Descrizione'),
                   ),
                 ],
               ),
@@ -158,161 +163,169 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget _buildBookItem(Book book) {
-  //   return Card(
-  //     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-  //     child: ListTile(
-  //       title: Text(book.title!),
-  //       subtitle: Text('Autore: ${book.author}'),
-  //       trailing: IconButton(
-  //         icon: const Icon(Icons.delete, color: Colors.red),
-  //         onPressed: () {
-  //           context.read<BooksBloc>().add(
-  //             DeleteBook(bookId: book.id!),
-  //           );
-  //         },
-  //       ),
-  //     ),
-  //   );
-  // }
 
-  Widget _buildBookItem(Book book) {
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+  Widget _buildBookCover(Book book) {
+    final colors = [
+      [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+      [Color(0xFF10B981), Color(0xFF059669)],
+      [Color(0xFFF59E0B), Color(0xFFD97706)],
+      [Color(0xFFEF4444), Color(0xFFDC2626)],
+      [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+      [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+      [Color(0xFF06B6D4), Color(0xFF0891B2)],
+      [Color(0xFF84CC16), Color(0xFF65A30D)],
+      [Color(0xFFF97316), Color(0xFFEA580C)],
+      [Color(0xFFEC4899), Color(0xFFDB2777)],
+    ];
+
+    final colorIndex = (book.title?.hashCode ?? 0).abs() % colors.length;
+    final gradientColors = colors[colorIndex];
+
+    return GestureDetector(
+      onTap: () {
+
+      },
+      onLongPress: () {
+
+      },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [
-              Colors.white,
-              Colors.blue.shade50,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header con titolo e pulsante elimina
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      book.title ?? 'Titolo non disponibile',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C3E50),
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      color: Colors.red,
-                      size: 24,
-                    ),
-                    onPressed: () {
-                      _showDeleteConfirmation(context, book);
-                    },
-                  ),
-                ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 12),
+            ),
+            child: Stack(
+              children: [
+                // Pattern di sfondo opzionale
+                // Positioned.fill(
+                //   child: Opacity(
+                //     opacity: 0.1,
+                //     child: Container(
+                //       decoration: BoxDecoration(
+                //         image: DecorationImage(
+                //           image: NetworkImage(
+                //           ),
+                //           repeat: ImageRepeat.repeat,
+                //           fit: BoxFit.none,
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
 
-              // Autore
-              Row(
-                children: [
-                  Icon(
-                    Icons.person_outline,
-                    size: 18,
-                    color: Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      book.author?.isNotEmpty == true
-                          ? book.author!
-                          : 'Autore sconosciuto',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-
-              // Descrizione (se presente)
-              if (book.description?.isNotEmpty == true) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.grey.shade300,
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
+                // Contenuto principale
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.description_outlined,
-                        size: 18,
-                        color: Colors.grey.shade600,
+
+                      // Pulsante elimina
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.white,
+                                  size: 20,
+                                ), onPressed: () {
+                                _showDeleteConfirmation(context, book);
+                              },
+                              ),
+                            ),
+
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          book.description!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade700,
-                            height: 1.4,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+
+                      const Spacer(),
+
+                      // Titolo del libro
+                      Text(
+                        book.title ?? 'Titolo non disponibile',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(1, 1),
+                              blurRadius: 3,
+                              color: Colors.black26,
+                            ),
+                          ],
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      Container(
+                        height: 2,
+                        width: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(1),
                         ),
                       ),
+
+                      const SizedBox(height: 8),
+
+                      // Autore
+                      Text(
+                        book.author?.isNotEmpty == true
+                            ? book.author!
+                            : 'Autore sconosciuto',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withOpacity(0.9),
+                          shadows: const [
+                            Shadow(
+                              offset: Offset(1, 1),
+                              blurRadius: 2,
+                              color: Colors.black26,
+                            ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
               ],
-
-              // Footer con ID (opzionale, per debug)
-              if (book.id != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'ID: ${book.id}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-// Metodo helper per la conferma di eliminazione
+// conferma di eliminazione
   void _showDeleteConfirmation(BuildContext context, Book book) {
     showDialog(
       context: context,
@@ -451,59 +464,51 @@ class HomePageState extends State<HomePage> {
           ],
           child: CustomScrollView(
             slivers: [
-              // SliverAppBar sostituisce AppBar
-              SliverAppBar(
-                backgroundColor: Colors.deepPurpleAccent,
-                foregroundColor: Colors.white,
-                pinned: true, // Rimane sempre visibile
-                expandedHeight: 120, // Altezza quando espansa
-                flexibleSpace: FlexibleSpaceBar(
-                  // Puoi aggiungere un background o altri elementi qui
-                  centerTitle: true,
-                ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.logout),
-                    tooltip: 'Logout',
-                    onPressed: _logout,
-                  )
-                ],
-              ),
-      
-              // Header con informazioni utente
+
               BlocBuilder<AuthBloc, AuthState>(
-                bloc: authBloc,
                 builder: (context, state) {
                   if (state is AuthAuthenticated) {
-                    return SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          'Benvenuto, ${state.email}',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
+                    return SliverAppBar(
+                      backgroundColor: const Color(0xFF5151C6),
+                      foregroundColor: Colors.white,
+                      pinned: true,
+                      expandedHeight: 130,
+                      //centerTitle: true,
+                      // title: Text('Benvenuto, ${state.name}'),
+                      flexibleSpace: FlexibleSpaceBar(
+                        title: Text('Benvenuto, ${state.name}', style: TextStyle(color: Color(0xFFFFFAC4)),),
+                        background: Image(
+                          fit: BoxFit.cover,
+                          // image: NetworkImage('https://i.redd.it/wetnhnvrvdpb1.jpg', ),
+                          image: AssetImage('assets/images/sfondo_login2.jpg'),
                         ),
+                        centerTitle: true,
                       ),
                     );
                   }
-                  return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+                  return const SliverAppBar(
+                    backgroundColor: Color(0xFF5151C6),
+                    foregroundColor: Colors.white,
+                    pinned: true,
+                    expandedHeight: 80,
+                    title: Text('Caricamento...'),
+                  );
                 },
               ),
-      
+
+
               SliverPersistentHeader(
                 pinned: true,
-                delegate: MyStickyHeaderDelegate(
+                delegate: StickyHeaderDelegate(
                   child: Container(
-                    color: Colors.green,
-                    child: Center(child: Text('LIBRI', style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),)),
+                    color: Color(0xFF8552CC),
+                    child: Center(child: Text('LIBRERIA', style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),)),
                   ),
                 ),
               ),
-              
-      
+
+
               // Lista libri con SliverList
               BlocBuilder<BooksBloc, BooksState>(
                 builder: (context, state) {
@@ -531,12 +536,113 @@ class HomePageState extends State<HomePage> {
                         ),
                       );
                     }
-                    return SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                          return _buildBookItem(state.books[index]);
-                        },
-                        childCount: state.books.length,
+                    return SliverPadding(
+                      padding: const EdgeInsets.all(16.0),
+                      sliver: SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2, // 2 colonne
+                          mainAxisSpacing: 16.0,
+                          crossAxisSpacing: 16.0,
+                          childAspectRatio: 0.7, // Ratio per simulare un libro (più alto che largo)
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                            return _buildBookCover(state.books[index]);
+                          },
+                          childCount: state.books.length,
+                        ),
+                      ),
+                    );
+                  } else if (state is BooksError) {
+                    return SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(50.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Errore: ${state.message}',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final authState = context.read<AuthBloc>().state;
+                                  if (authState is AuthAuthenticated) {
+                                    context.read<BooksBloc>().add(
+                                      LoadBooks(userId: authState.userId),
+                                    );
+                                  }
+                                },
+                                child: const Text('Riprova'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return const SliverToBoxAdapter(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(50.0),
+                        child: Text('Effettua il login per vedere i tuoi libri.'),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: StickyHeaderDelegate(
+                  child: Container(
+                    color: Color(0xFFA9CC52),
+                    child: Center(child: Text('Altre cose', style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),)),
+                  ),
+                ),
+              ),
+              BlocBuilder<BooksBloc, BooksState>(
+                builder: (context, state) {
+                  if (state is BooksLoading) {
+                    return const SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(50.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                    );
+                  } else if (state is BooksLoaded) {
+                    if (state.books.isEmpty) {
+                      return const SliverToBoxAdapter(
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(50.0),
+                            child: Text(
+                              'Nessun libro trovato.\nTocca "+" per aggiungerne uno.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return SliverPadding(
+                      padding: const EdgeInsets.all(16.0),
+                      sliver: SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2, // 2 colonne
+                          mainAxisSpacing: 16.0,
+                          crossAxisSpacing: 16.0,
+                          childAspectRatio: 0.7, // Ratio per simulare un libro (più alto che largo)
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                            return _buildBookCover(state.books[index]);
+                          },
+                          childCount: state.books.length,
+                        ),
                       ),
                     );
                   } else if (state is BooksError) {
@@ -587,13 +693,16 @@ class HomePageState extends State<HomePage> {
             if (state is AuthAuthenticated) {
               return SpeedDial(
                 animatedIcon: AnimatedIcons.menu_close,
-                backgroundColor: Colors.blue,
+                backgroundColor: const Color(0xFF5151C6),
+                foregroundColor: Colors.white,
                 overlayColor: Colors.black,
-                overlayOpacity: 0.4,
+                overlayOpacity: 0.6,
+                childMargin: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
                 children: [
                   SpeedDialChild(
                     child: const Icon(Icons.refresh),
                     label: 'Aggiorna',
+                    foregroundColor: Colors.white,
                     backgroundColor: Colors.blue,
                     onTap: () {
                       context.read<BooksBloc>().add(
@@ -604,8 +713,16 @@ class HomePageState extends State<HomePage> {
                   SpeedDialChild(
                     child: const Icon(Icons.add),
                     label: 'Aggiungi libro',
-                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.blue,
                     onTap: _showAddBookDialog,
+                  ),
+                  SpeedDialChild(
+                    child: const Icon(Icons.logout),
+                    label: 'Logout',
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.orange,
+                    onTap: _logout,
                   ),
                 ],
               );
@@ -618,11 +735,11 @@ class HomePageState extends State<HomePage> {
   }
 }
 
-class MyStickyHeaderDelegate extends SliverPersistentHeaderDelegate {
+class StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
   final double height;
 
-  MyStickyHeaderDelegate({
+  StickyHeaderDelegate({
     required this.child,
     this.height = 60.0,
   });
@@ -635,7 +752,7 @@ class MyStickyHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
+    return SizedBox(
       height: height,
       width: double.infinity,
       child: child,
@@ -643,7 +760,7 @@ class MyStickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(MyStickyHeaderDelegate oldDelegate) {
+  bool shouldRebuild(StickyHeaderDelegate oldDelegate) {
     return oldDelegate.child != child || oldDelegate.height != height;
   }
 }

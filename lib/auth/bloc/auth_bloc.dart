@@ -23,6 +23,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       add(AuthStatusChanged(
         isAuthenticated: user != null,
         userId: user?.uid,
+        name: user?.displayName ?? ''
       ));
     });
   }
@@ -104,6 +105,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthAuthenticated(
           userId: event.userId!,
           email: user.email!,
+          // name: user.displayName.toString()
+          name: event.name
         ));
       }
     } else {

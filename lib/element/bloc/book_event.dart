@@ -26,18 +26,18 @@ class DeleteBookAndReload extends BooksEvent {
 }
 
 class AddBook extends BooksEvent {
-  final String name;
-  final int birthYear;
-  final String userId;
+  final String title;
+  final String author;
+  final String? description;
 
   const AddBook({
-    required this.name,
-    required this.birthYear,
-    required this.userId,
+    required this.title,
+    required this.author,
+    this.description,
   });
 
   @override
-  List<Object?> get props => [name, birthYear, userId];
+  List<Object?> get props => [title, author, description];
 }
 
 class DeleteBook extends BooksEvent {

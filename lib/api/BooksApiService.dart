@@ -1,11 +1,12 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
 import '../element/bloc/book.dart';
 
 class BookApiService {
-  static const String baseUrl = 'http://192.168.1.2:8080/api';
+  static const String baseUrl = 'http://192.168.4.66:8080/api';
 
   static Future<List<Book>> getBooks() async {
     try {
@@ -39,6 +40,27 @@ class BookApiService {
       }
     } catch (e) {
       throw Exception('Error fetching books: $e');
+    }
+  }
+
+  static Future<void> addBook(Book book) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/books'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(book),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('Libro aggiunto con successo');
+      } else {
+        throw Exception('Errore: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Errore: $e');
     }
   }
 }
