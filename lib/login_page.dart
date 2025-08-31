@@ -121,22 +121,29 @@ class LoginPageState extends State<LoginPage> {
                     builder: (context, state) {
                       return Container(
                         decoration: BoxDecoration(
+                            color: state is CurrentConnection ? state.message.contains('Nessuna') ? Color(0xFFA70000) : Color(0xFF35A700) : Color(0xFFA70000),
                             border: Border.all(
                               width: 1.5,
-                              color: state is CurrentConnection ?
-                                state.message.contains('Nessuna') ? Colors.red : Colors.greenAccent : Colors.red),
-                        ),
+                              color: Colors.white,
+                        )),
                         padding: const EdgeInsets.all(8.0),
                         child: state is CurrentConnection
-                            ? Text(
-                          state.message,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: state.message.contains('Nessuna') ? Colors.red : Colors.greenAccent,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12
-                          ),
-                        )
+                            ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                state.message.contains('WiFi') ? Icon(Icons.wifi, color: Colors.white,) : state.message.contains('mobile') ? Icon(Icons.mobile_friendly, color: Colors.white,) : Icon(Icons.no_cell, color: Colors.white,),
+                                SizedBox(width: 5,),
+                                Text(
+                                  state.message,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12
+                                  ),
+                                ),
+                              ],
+                            )
                             : Text(
                           'Controllo connessione...',
                           textAlign: TextAlign.center,
