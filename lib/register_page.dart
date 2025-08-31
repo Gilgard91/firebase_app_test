@@ -58,21 +58,24 @@ class RegisterPageState extends State<RegisterPage> {
             Container(
               width: double.infinity,
               height: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF888BF4),
-                    Color(0xFF5151C6),
-                    Color(0xFF9C0CDA),
-                    Color(0xFFC17AD1),
-                    Color(0xFF5151C6),
-                    Color(0xFF9C0CDA),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-
+              // decoration: BoxDecoration(
+              //   gradient: LinearGradient(
+              //     colors: [
+              //       Color(0xFF888BF4),
+              //       Color(0xFF5151C6),
+              //       Color(0xFF9C0CDA),
+              //       Color(0xFFC17AD1),
+              //       Color(0xFF5151C6),
+              //       Color(0xFF9C0CDA),
+              //     ],
+              //     begin: Alignment.topLeft,
+              //     end: Alignment.bottomRight,
+              //   ),
+              // ),
+                child: Image(
+                  fit: BoxFit.cover,
+                  image: AssetImage('assets/images/wp5580216.jpg'),
+                )
             ),
             // Container(
             //   decoration: BoxDecoration(
@@ -124,7 +127,7 @@ class RegisterPageState extends State<RegisterPage> {
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Color(0xFFF0E8E2),
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(30),
                           topRight: Radius.circular(30),
@@ -145,7 +148,6 @@ class RegisterPageState extends State<RegisterPage> {
                                 children: [
                                   const SizedBox(height: 30),
 
-                                  // Campo nome
                                   SizedBox(
                                     width: 270,
                                     child: TextFormField(
@@ -167,7 +169,6 @@ class RegisterPageState extends State<RegisterPage> {
 
                                   const SizedBox(height: 20),
 
-                                  // Campo Email
                                   SizedBox(
                                     width: 270,
                                     child: TextFormField(
@@ -192,7 +193,6 @@ class RegisterPageState extends State<RegisterPage> {
 
                                   const SizedBox(height: 20),
 
-                                  // Campo Password
                                   SizedBox(
                                     width: 270,
                                     child: TextFormField(
@@ -217,7 +217,6 @@ class RegisterPageState extends State<RegisterPage> {
 
                                   const SizedBox(height: 40),
 
-                                  // Pulsanti
                                   BlocBuilder<AuthBloc, AuthState>(
                                     builder: (context, state) {
                                       final isLoading = state is AuthLoading;

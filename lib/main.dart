@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app_test/connection_checker/bloc/connection_bloc.dart';
+import 'package:app_test/element/bloc/google_book_bloc.dart';
 import 'package:app_test/router.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -36,6 +37,9 @@ class MyApp extends StatelessWidget {
         BlocProvider<AuthBloc>(
           create: (context) => AuthBloc(),
         ),
+        BlocProvider<GoogleBooksBloc>(
+          create: (context) => GoogleBooksBloc(),
+        ),
         BlocProvider<BooksBloc>(
           create: (context) => BooksBloc(),
         ),
@@ -48,12 +52,7 @@ class MyApp extends StatelessWidget {
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             title: 'App di test',
-            theme:
-            // ThemeData(
-            //   primarySwatch: Colors.blue,
-            //   useMaterial3: true,
-            // ),
-            AppTheme.lightTheme,
+            theme: AppTheme.lightTheme,
             routerConfig: AppRouter.router(context),
           );
         },

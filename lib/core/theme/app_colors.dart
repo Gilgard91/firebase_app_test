@@ -19,6 +19,14 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+  static const LinearGradient gradientError = LinearGradient(
+    colors: [
+      Color(0xFFF48C88),
+      Color(0xFFC65151),
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
   static const Color surface = Color(0xFFFFFFFF);
   static const Color primaryDark = Color(0xFF1976D2);
   static const Color secondary = Color(0xFFFF9800);

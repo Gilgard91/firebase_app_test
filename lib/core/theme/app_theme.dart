@@ -77,19 +77,25 @@ class AppTheme {
 class GradientElevatedButtonPrimary extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
+  final double? width;
+  final double? fontSize;
+  final Gradient? gradient;
 
   const GradientElevatedButtonPrimary({
     super.key,
     required this.text,
     this.onPressed,
+    this.width = 200,
+    this.fontSize = 20,
+    this.gradient = AppColors.textPrimary
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 200,
+      width: width,
       decoration: BoxDecoration(
-        gradient: AppColors.textPrimary,
+        gradient: gradient,
         borderRadius: BorderRadius.circular(30),
       ),
       child: ElevatedButton(
@@ -104,7 +110,7 @@ class GradientElevatedButtonPrimary extends StatelessWidget {
             borderRadius: BorderRadius.circular(30),
           ),
         ),
-        child: Text(text, style: TextStyle(fontSize: 20),),
+        child: Text(text, style: TextStyle(fontSize: fontSize),),
       ),
     );
   }

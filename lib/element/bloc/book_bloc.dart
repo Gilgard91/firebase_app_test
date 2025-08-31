@@ -17,37 +17,41 @@ class BooksBloc extends Bloc<BooksEvent, BooksState> {
         super(BooksInitial()) {
 
     on<LoadBooks>(_onLoadBooks);
-    on<AddBook>(_onAddBook);
     on<DeleteBook>(_onDeleteBook);
+    on<AddBook>(_onAddBook);
     on<DeleteBookAndReload>(_onDeleteBookAndReload);
-    // on<BooksSubscriptionRequested>(_onSubscriptionRequested);
   }
+
 
   Future<void> _onLoadBooks(
       LoadBooks event,
       Emitter<BooksState> emit,
       ) async {
     emit(BooksLoading());
+
+    List<Book> myBooks = [];
+
+
     try {
-      final List<Book> books = await BookApiService.getBooks();
-
-      emit(BooksLoaded(books: books));
+      myBooks = await BookApiService.getBooksBackend();
     } catch (e) {
-      emit(BooksError(message: 'Errore nel caricamento: $e'));
+      debugPrint('Errore caricamento myBooks: $e');
     }
-  }
 
+    emit(BooksLoaded(
+        myBooks: myBooks
+    ));
+  }
 
   Future<void> _onDeleteBookAndReload(
       DeleteBookAndReload event,
       Emitter<BooksState> emit,
       ) async {
     try {
-      // Mantieni lo stato corrente durante l'operazione
       final currentState = state;
       if (currentState is BooksLoaded) {
         emit(BooksLoaded(
-          books: currentState.books,
+          myBooks: currentState.myBooks,
           isDeleting: true,
         ));
       }
@@ -55,10 +59,11 @@ class BooksBloc extends Bloc<BooksEvent, BooksState> {
       // Elimina il libro
       await BookApiService.deleteBook(event.bookId);
 
-      // Ricarica i libri
-      final List<Book> books = await BookApiService.getBooks();
+      emit(BooksLoading());
 
-      emit(BooksLoaded(books: books));
+      final List<Book> myBooks = await BookApiService.getBooksBackend();
+
+      emit(BooksLoaded(myBooks: myBooks));
     } catch (e) {
       emit(BooksError(message: 'Errore nell\'eliminazione: $e'));
     }
@@ -69,6 +74,8 @@ class BooksBloc extends Bloc<BooksEvent, BooksState> {
       Emitter<BooksState> emit,
       ) async {
     try {
+      emit(BooksLoading());
+
       final book = Book(
         title: event.title,
         author: event.author,
@@ -77,19 +84,14 @@ class BooksBloc extends Bloc<BooksEvent, BooksState> {
 
       await BookApiService.addBook(book);
 
-      final currentState = state;
-      if (currentState is BooksLoaded) {
-        final updatedBooks = [...currentState.books, book];
-        emit(BookAdded(
-          message: 'Libro aggiunto con successo!',
-          books: updatedBooks,
-        ));
-      } else {
-        emit(BookAdded(
-          message: 'Libro aggiunto con successo!',
-          books: [book],
-        ));
-      }
+      List<Book> myBooks = [];
+
+      myBooks = await BookApiService.getBooksBackend();
+
+      emit(BooksLoaded(
+          myBooks: myBooks
+      ));
+
     } catch (e) {
       emit(BooksError(message: 'Errore nell\'aggiunta: $e'));
     }
@@ -106,48 +108,5 @@ class BooksBloc extends Bloc<BooksEvent, BooksState> {
       emit(BooksError(message: 'Errore nella cancellazione: $e'));
     }
   }
-  //
-  // Stream<int> testStream() async* {
-  //   for (int i = 1; i <= 10; i++) {
-  //     debugPrint("sendo il numero $i");
-  //     await Future.delayed(Duration(seconds: 2));
-  //     yield i;
-  //   }
-  // }
-  //
-  // Future<void> _onSubscriptionRequested(
-  //     BooksSubscriptionRequested event,
-  //     Emitter<BooksState> emit,
-  //     ) async {
-  //   emit(BooksLoading());
-  //   Stream<int> stream = testStream();
-  //   stream.listen((data) {
-  //     debugPrint("ricevuto il numero $data");
-  //   });
-  //   await _BooksSubscription?.cancel();
-  //
-  //   // Usa emit.forEach per gestire gli stream in modo sicuro
-  //   await emit.forEach<QuerySnapshot>(
-  //     _firestore
-  //         .collection('Musicisti')
-  //         .where('userId', isEqualTo: event.userId)
-  //         .snapshots(),
-  //     onData: (snapshot) {
-  //       final Books = snapshot.docs
-  //           .map((doc) => Book.fromFirestore(doc))
-  //           .toList();
-  //       return BooksLoaded(Books: Books);
-  //     },
-  //     onError: (error, stackTrace) {
-  //       return BooksError(message: 'Errore nel caricamento: $error');
-  //     },
-  //   );
-  // }
 
-  @override
-  Future<void> close() {
-    // Non serve più cancellare _BooksSubscription
-    // perché emit.forEach lo gestisce automaticamente
-    return super.close();
-  }
 }

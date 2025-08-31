@@ -14,13 +14,19 @@ class BooksInitial extends BooksState {}
 class BooksLoading extends BooksState {}
 
 class BooksLoaded extends BooksState {
-  final List<Book> books;
+  final List<Book> myBooks;
+
   final bool? isDeleting;
 
-  const BooksLoaded({required this.books, this.isDeleting});
+  const BooksLoaded(
+      {
+        required this.myBooks,
+        this.isDeleting
+      }
+      );
 
   @override
-  List<Object?> get props => [books];
+  List<Object?> get props => [myBooks];
 }
 
 class BooksError extends BooksState {
@@ -32,12 +38,13 @@ class BooksError extends BooksState {
   List<Object?> get props => [message];
 }
 
-class BookAdded extends BooksLoaded {
+class BookAdded extends BooksState {
   final String message;
+  final List<Book> books;
 
   const BookAdded({
-    required this.message,
-    required super.books,
+    required this.books,
+    required this.message
   });
 
   @override

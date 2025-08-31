@@ -1,3 +1,6 @@
+import 'dart:ui';
+
+import 'package:app_test/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -6,10 +9,13 @@ import 'package:go_router/go_router.dart';
 import 'auth/bloc/auth_bloc.dart';
 import 'auth/bloc/auth_event.dart';
 import 'auth/bloc/auth_state.dart';
+import 'core/theme/app_colors.dart';
 import 'element/bloc/book.dart';
 import 'element/bloc/book_bloc.dart';
 import 'element/bloc/book_event.dart';
 import 'element/bloc/book_state.dart';
+import 'element/bloc/google_book_bloc.dart';
+import 'helpers/home_bloc_helper.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,11 +34,16 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    final authState = context.read<AuthBloc>().state;
+    final authState = context
+        .read<AuthBloc>()
+        .state;
     // final authState = BlocProvider.of<AuthBloc>(context).state;
     if (authState is AuthAuthenticated) {
       context.read<BooksBloc>().add(
         LoadBooks(userId: authState.userId),
+      );
+      context.read<GoogleBooksBloc>().add(
+        LoadGoogleBooks(),
       );
 
     }
@@ -47,11 +58,18 @@ class HomePageState extends State<HomePage> {
   }
 
   void _logout() {
-    context.read<AuthBloc>().add(AuthLogoutRequested());
+    if (context.mounted) {
+      final authBloc = context.read<AuthBloc>();
+      if (!authBloc.isClosed) {
+        authBloc.add(AuthLogoutRequested());
+      }
+    }
   }
 
   void _addBook() {
-    final authState = context.read<AuthBloc>().state;
+    final authState = context
+        .read<AuthBloc>()
+        .state;
     if (authState is AuthAuthenticated) {
       final title = _titleController.text.trim();
       final author = _authorController.text.trim();
@@ -122,19 +140,7 @@ class HomePageState extends State<HomePage> {
                 Navigator.of(dialogContext).pop();
               },
             ),
-            BlocConsumer<BooksBloc, BooksState>(
-              listener: (context, state) {
-                if (state is BookAdded) {
-                  Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message)),
-                  );
-                } else if (state is BooksError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message)),
-                  );
-                }
-              },
+            BlocBuilder<BooksBloc, BooksState>(
               builder: (context, state) {
                 return ElevatedButton(
                   onPressed: state is BooksLoading
@@ -145,6 +151,7 @@ class HomePageState extends State<HomePage> {
                       context.read<BooksBloc>().add(
                         LoadBooks(),
                       );
+                      context.pop();
                     }
                   },
                   child: state is BooksLoading
@@ -164,7 +171,7 @@ class HomePageState extends State<HomePage> {
   }
 
 
-  Widget _buildBookCover(Book book) {
+  Widget _buildBookCover(Book book, {required bool fromGoogle}) {
     final colors = [
       [Color(0xFF6366F1), Color(0xFF8B5CF6)],
       [Color(0xFF10B981), Color(0xFF059669)],
@@ -186,14 +193,14 @@ class HomePageState extends State<HomePage> {
 
       },
       onLongPress: () {
-
+        context.pushNamed('screen');
       },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Colors.black.withValues(alpha: 0.9),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -202,7 +209,15 @@ class HomePageState extends State<HomePage> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            decoration: BoxDecoration(
+            decoration: book.thumbnail!.isNotEmpty ? BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage(
+                    '${book.thumbnail}'
+                ),
+                // repeat: ImageRepeat.repeat,
+                fit: BoxFit.fill,
+              ),
+            ) : BoxDecoration(
               gradient: LinearGradient(
                 colors: gradientColors,
                 begin: Alignment.topLeft,
@@ -211,57 +226,38 @@ class HomePageState extends State<HomePage> {
             ),
             child: Stack(
               children: [
-                // Pattern di sfondo opzionale
-                // Positioned.fill(
-                //   child: Opacity(
-                //     opacity: 0.1,
-                //     child: Container(
-                //       decoration: BoxDecoration(
-                //         image: DecorationImage(
-                //           image: NetworkImage(
-                //           ),
-                //           repeat: ImageRepeat.repeat,
-                //           fit: BoxFit.none,
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                // ),
 
-                // Contenuto principale
+
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
-                      // Pulsante elimina
-                      Row(
+                      !fromGoogle ? Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.white,
-                                  size: 20,
-                                ), onPressed: () {
-                                _showDeleteConfirmation(context, book);
-                              },
-                              ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
                             ),
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.white,
+                                size: 20,
+                              ), onPressed: () {
+                              _deleteDialog(context, book);
+                            },
+                            ),
+                          ),
 
                         ],
-                      ),
+                      ) : SizedBox.shrink(),
 
                       const Spacer(),
 
-                      // Titolo del libro
-                      Text(
+                      !fromGoogle ? Text(
                         book.title ?? 'Titolo non disponibile',
                         style: const TextStyle(
                           fontSize: 18,
@@ -277,23 +273,22 @@ class HomePageState extends State<HomePage> {
                         ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                      ),
+                      ) : SizedBox.shrink(),
 
                       const SizedBox(height: 8),
 
-                      Container(
+                      !fromGoogle ? Container(
                         height: 2,
                         width: 40,
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.8),
                           borderRadius: BorderRadius.circular(1),
                         ),
-                      ),
+                      ) : SizedBox.shrink(),
 
                       const SizedBox(height: 8),
 
-                      // Autore
-                      Text(
+                      !fromGoogle ? Text(
                         book.author?.isNotEmpty == true
                             ? book.author!
                             : 'Autore sconosciuto',
@@ -311,7 +306,7 @@ class HomePageState extends State<HomePage> {
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                      ),
+                      ) : SizedBox.shrink(),
 
                       const SizedBox(height: 16),
                     ],
@@ -325,19 +320,15 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-// conferma di eliminazione
-  void _showDeleteConfirmation(BuildContext context, Book book) {
+  void _deleteDialog(BuildContext context, Book book) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return BlocListener<BooksBloc, BooksState>(
           listener: (context, state) {
-            // Ascolta i cambiamenti di stato
             if (state is BooksLoaded && state.isDeleting != true) {
-              // Se i libri sono stati ricaricati e non siamo più in fase di eliminazione
               context.pop();
             } else if (state is BooksError) {
-              // In caso di errore, chiudi il dialog e mostra l'errore
               context.pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -353,8 +344,8 @@ class HomePageState extends State<HomePage> {
             ),
             title: const Row(
               children: [
-                Icon(Icons.warning_amber_outlined, color: Colors.orange),
-                SizedBox(width: 12),
+                // Icon(Icons.warning_amber_outlined, color: Colors.orange),
+                // SizedBox(width: 12),
                 Text('Conferma eliminazione'),
               ],
             ),
@@ -365,7 +356,6 @@ class HomePageState extends State<HomePage> {
                   'Sei sicuro di voler eliminare il libro "${book.title}"?',
                   style: const TextStyle(fontSize: 16),
                 ),
-                // mostra un indicatore di caricamento se stiamo eliminando
                 BlocBuilder<BooksBloc, BooksState>(
                   builder: (context, state) {
                     if (state is BooksLoaded && state.isDeleting == true) {
@@ -387,40 +377,57 @@ class HomePageState extends State<HomePage> {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(
-                        onPressed: isDeleting ? null : () => Navigator.of(context).pop(),
-                        child: Text(
-                          'Annulla',
-                          style: TextStyle(
-                            color: isDeleting ? Colors.grey : Colors.grey.shade600,
-                          ),
-                        ),
+                      GradientElevatedButtonSecondary(
+                          text: 'Annulla',
+                          onPressed: isDeleting ? null : () => context.pop(),
                       ),
+                      // TextButton(
+                      //   onPressed: isDeleting ? null : () => Navigator.of(context).pop(),
+                      //   child: Text(
+                      //     'Annulla',
+                      //     style: TextStyle(
+                      //       color: isDeleting ? Colors.grey : Colors.grey.shade600,
+                      //     ),
+                      //   ),
+                      // ),
                       const SizedBox(width: 8),
-                      ElevatedButton(
+                      GradientElevatedButtonPrimary(
+                        text: 'Elimina',
                         onPressed: isDeleting ? null : () {
-                          context.read<BooksBloc>().add(
-                            DeleteBookAndReload(bookId: book.id!),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isDeleting ? Colors.grey : Colors.red,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: isDeleting
-                            ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                            : const Text('Elimina'),
-                      ),
+                              context.read<BooksBloc>().add(
+                                DeleteBookAndReload(bookId: book.id!),
+                              );
+                              context.pop();
+                            },
+                        width: 100,
+                        fontSize: 15,
+                        gradient: AppColors.gradientError,
+                      )
+                      // ElevatedButton(
+                      //   onPressed: isDeleting ? null : () {
+                      //     context.read<BooksBloc>().add(
+                      //       DeleteBookAndReload(bookId: book.id!),
+                      //     );
+                      //     context.pop();
+                      //   },
+                      //   style: ElevatedButton.styleFrom(
+                      //     backgroundColor: isDeleting ? Colors.grey : Colors.red,
+                      //     foregroundColor: Colors.white,
+                      //     shape: RoundedRectangleBorder(
+                      //       borderRadius: BorderRadius.circular(8),
+                      //     ),
+                      //   ),
+                      //   child: isDeleting
+                      //       ? const SizedBox(
+                      //     width: 16,
+                      //     height: 16,
+                      //     child: CircularProgressIndicator(
+                      //       strokeWidth: 2,
+                      //       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      //     ),
+                      //   )
+                      //       : const Text('Elimina'),
+                      // ),
                     ],
                   );
                 },
@@ -434,17 +441,22 @@ class HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final AuthBloc authBloc = context.read<AuthBloc>();
+    // final AuthBloc authBloc = context.read<AuthBloc>();
 
     return SafeArea(
       top: false,
       child: Scaffold(
+        backgroundColor:Color(0xFFF0E8E2),
         body: MultiBlocListener(
           listeners: [
             BlocListener<AuthBloc, AuthState>(
               listener: (context, state) {
                 if (state is AuthUnauthenticated) {
-                  context.go('/login');
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (context.mounted) {
+                      context.go('/login');
+                    }
+                  });
                 } else if (state is AuthError) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(state.message)),
@@ -452,83 +464,218 @@ class HomePageState extends State<HomePage> {
                 }
               },
             ),
-            BlocListener<BooksBloc, BooksState>(
+            BlocListener<GoogleBooksBloc, GoogleBooksState>(
               listener: (context, state) {
                 if (state is BooksError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message)),
-                  );
+                  // ScaffoldMessenger.of(context).showSnackBar(
+                  //   SnackBar(content: Text(state.message)),
+                  // );
                 }
               },
             ),
           ],
           child: CustomScrollView(
             slivers: [
-
-              BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  if (state is AuthAuthenticated) {
-                    return SliverAppBar(
-                      backgroundColor: const Color(0xFF5151C6),
-                      foregroundColor: Colors.white,
-                      pinned: true,
-                      expandedHeight: 130,
-                      //centerTitle: true,
-                      // title: Text('Benvenuto, ${state.name}'),
-                      flexibleSpace: FlexibleSpaceBar(
-                        title: Text('Benvenuto, ${state.name}', style: TextStyle(color: Color(0xFFFFFAC4)),),
+            BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            if (state is AuthAuthenticated) {
+              return SliverAppBar(
+                backgroundColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                pinned: true,
+                expandedHeight: 130,
+                bottom: PreferredSize(
+                  preferredSize: Size.fromHeight(0.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.black,
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                flexibleSpace: ClipRRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                    child: Container(
+                      color: Color(0xFF7B2F1A).withValues(alpha: 0.75),
+                      child: FlexibleSpaceBar(
+                        title: Stack(
+                          children: [
+                            Text(
+                              'Benvenuto, ${state.name}',
+                              style: TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold,
+                                foreground: Paint()
+                                  ..style = PaintingStyle.stroke
+                                  ..strokeWidth = 3.0
+                                  ..color = Colors.black,
+                              ),
+                            ),
+                            Text(
+                              'Benvenuto, ${state.name}',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                         background: Image(
                           fit: BoxFit.cover,
-                          // image: NetworkImage('https://i.redd.it/wetnhnvrvdpb1.jpg', ),
-                          image: AssetImage('assets/images/sfondo_login2.jpg'),
+                          image: AssetImage('assets/images/books-1756668923550-6076.jpg'),
                         ),
                         centerTitle: true,
                       ),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return SliverAppBar(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              pinned: true,
+              expandedHeight: 80,
+              flexibleSpace: ClipRRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                  child: Container(
+                    color: Color(0xFF5151C6).withOpacity(0.8),
+                    child: FlexibleSpaceBar(
+                      title: Text('Caricamento...'),
+                      centerTitle: true,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+          ),
+              BlocBuilder<GoogleBooksBloc, GoogleBooksState>(
+                builder: (context, state) => HomeBlocHelper.buildStickyHeader(
+                  state,
+                  'thriller',
+                  color: const Color(0xFF5151C6),
+                ),
+              ),
+              BlocBuilder<GoogleBooksBloc, GoogleBooksState>(
+                builder: (context, state) {
+                  if (state is GoogleBooksLoading) {
+                    return const SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(50.0),
+                          child: CircularProgressIndicator(color: Colors.white,),
+                        ),
+                      ),
                     );
                   }
+                  return HomeBlocHelper.buildBooksContent(
+                    context,
+                    state,
+                    bookCoverBuilder: (book) => _buildBookCover(book, fromGoogle: true),
+                    bookType: 'thriller',
+                  );
+                }
+              ),
+              BlocBuilder<GoogleBooksBloc, GoogleBooksState>(
+                builder: (context, state) => HomeBlocHelper.buildStickyHeader(
+                  state,
+                  'avventura',
+                  color: const Color(0xFF5151C6),
+                ),
+              ),
+              BlocBuilder<GoogleBooksBloc, GoogleBooksState>(
+                  builder: (context, state) {
+                    // if (state is GoogleBooksLoading) {
+                    //   return const SliverToBoxAdapter(
+                    //     child: Center(
+                    //       child: Padding(
+                    //         padding: EdgeInsets.all(50.0),
+                    //         child: CircularProgressIndicator(color: Colors.white,),
+                    //       ),
+                    //     ),
+                    //   );
+                    // }
+                    return HomeBlocHelper.buildBooksContent(
+                      context,
+                      state,
+                      bookCoverBuilder: (book) => _buildBookCover(book, fromGoogle: true),
+                      bookType: 'adventure',
+                    );
+                  }
+              ),
 
-                  return const SliverAppBar(
-                    backgroundColor: Color(0xFF5151C6),
-                    foregroundColor: Colors.white,
+
+
+
+              BlocBuilder<BooksBloc, BooksState>(
+                builder: (context, state) {
+                  if (state is BooksLoading) {
+                      return const SliverToBoxAdapter(
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(50.0),
+                            child: CircularProgressIndicator(color: Colors.white,),
+                          ),
+                        ),
+                      );
+                  }
+                  return SliverPersistentHeader(
                     pinned: true,
-                    expandedHeight: 80,
-                    title: Text('Caricamento...'),
+                    delegate: StickyHeaderDelegate(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Color(0xFF5151C6),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.black,
+                              width: 2.0,
+                            ),
+                          ),
+                        ),
+                        child: Center(
+                            child: Text(
+                              'I MIEI LIBRI',
+                              style: TextStyle(
+                                  fontSize: 20,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold
+                              ),
+                            )
+                        ),
+                      ),
+                    ),
                   );
                 },
               ),
-
-
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: StickyHeaderDelegate(
-                  child: Container(
-                    color: Color(0xFF8552CC),
-                    child: Center(child: Text('LIBRERIA', style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),)),
-                  ),
-                ),
-              ),
-
-
-              // Lista libri con SliverList
               BlocBuilder<BooksBloc, BooksState>(
                 builder: (context, state) {
-                  if (state is BooksLoading) {
-                    return const SliverToBoxAdapter(
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(50.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                    );
-                  } else if (state is BooksLoaded) {
-                    if (state.books.isEmpty) {
+                  // if (state is BooksLoading) {
+                  //   return const SliverToBoxAdapter(
+                  //     child: Center(
+                  //       child: Padding(
+                  //         padding: EdgeInsets.all(50.0),
+                  //         child: CircularProgressIndicator(),
+                  //       ),
+                  //     ),
+                  //   );
+                  // } else
+                  if (state is BooksLoaded) {
+                    if (state.myBooks.isEmpty) {
                       return const SliverToBoxAdapter(
                         child: Center(
                           child: Padding(
-                            padding: EdgeInsets.all(50.0),
+                            padding: EdgeInsets.all(25.0),
                             child: Text(
-                              'Nessun libro trovato.\nTocca "+" per aggiungerne uno.',
+                              'Non è possibile caricare i libri.',
                               textAlign: TextAlign.center,
                               style: TextStyle(fontSize: 16),
                             ),
@@ -540,16 +687,16 @@ class HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.all(16.0),
                       sliver: SliverGrid(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2, // 2 colonne
+                          crossAxisCount: 2,
                           mainAxisSpacing: 16.0,
                           crossAxisSpacing: 16.0,
-                          childAspectRatio: 0.7, // Ratio per simulare un libro (più alto che largo)
+                          childAspectRatio: 0.7,
                         ),
                         delegate: SliverChildBuilderDelegate(
                               (context, index) {
-                            return _buildBookCover(state.books[index]);
+                            return _buildBookCover(state.myBooks[index], fromGoogle: false);
                           },
-                          childCount: state.books.length,
+                          childCount: state.myBooks.length,
                         ),
                       ),
                     );
@@ -583,117 +730,33 @@ class HomePageState extends State<HomePage> {
                       ),
                     );
                   }
+                  // return const SliverToBoxAdapter(
+                  //   child: Center(
+                  //     child: Padding(
+                  //       padding: EdgeInsets.all(50.0),
+                  //       child: Text('Effettua il login per vedere i tuoi libri.'),
+                  //     ),
+                  //   ),
+                  // );
                   return const SliverToBoxAdapter(
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(50.0),
-                        child: Text('Effettua il login per vedere i tuoi libri.'),
-                      ),
-                    ),
+                    child: SizedBox.shrink(),
                   );
                 },
               ),
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: StickyHeaderDelegate(
-                  child: Container(
-                    color: Color(0xFFA9CC52),
-                    child: Center(child: Text('Altre cose', style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold),)),
-                  ),
-                ),
-              ),
-              BlocBuilder<BooksBloc, BooksState>(
-                builder: (context, state) {
-                  if (state is BooksLoading) {
-                    return const SliverToBoxAdapter(
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(50.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                    );
-                  } else if (state is BooksLoaded) {
-                    if (state.books.isEmpty) {
-                      return const SliverToBoxAdapter(
-                        child: Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(50.0),
-                            child: Text(
-                              'Nessun libro trovato.\nTocca "+" per aggiungerne uno.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    return SliverPadding(
-                      padding: const EdgeInsets.all(16.0),
-                      sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2, // 2 colonne
-                          mainAxisSpacing: 16.0,
-                          crossAxisSpacing: 16.0,
-                          childAspectRatio: 0.7, // Ratio per simulare un libro (più alto che largo)
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                            return _buildBookCover(state.books[index]);
-                          },
-                          childCount: state.books.length,
-                        ),
-                      ),
-                    );
-                  } else if (state is BooksError) {
-                    return SliverToBoxAdapter(
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(50.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Errore: ${state.message}',
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  final authState = context.read<AuthBloc>().state;
-                                  if (authState is AuthAuthenticated) {
-                                    context.read<BooksBloc>().add(
-                                      LoadBooks(userId: authState.userId),
-                                    );
-                                  }
-                                },
-                                child: const Text('Riprova'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  return const SliverToBoxAdapter(
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(50.0),
-                        child: Text('Effettua il login per vedere i tuoi libri.'),
-                      ),
-                    ),
-                  );
-                },
-              ),
+
             ],
           ),
         ),
+
+
+
+
         floatingActionButton: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
             if (state is AuthAuthenticated) {
               return SpeedDial(
                 animatedIcon: AnimatedIcons.menu_close,
-                backgroundColor: const Color(0xFF5151C6),
+                backgroundColor: Color(0xFF5151C6),
                 foregroundColor: Colors.white,
                 overlayColor: Colors.black,
                 overlayOpacity: 0.6,
@@ -703,7 +766,7 @@ class HomePageState extends State<HomePage> {
                     child: const Icon(Icons.refresh),
                     label: 'Aggiorna',
                     foregroundColor: Colors.white,
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFFC2B6AC),
                     onTap: () {
                       context.read<BooksBloc>().add(
                         LoadBooks(),
@@ -714,14 +777,14 @@ class HomePageState extends State<HomePage> {
                     child: const Icon(Icons.add),
                     label: 'Aggiungi libro',
                     foregroundColor: Colors.white,
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFFC2B6AC),
                     onTap: _showAddBookDialog,
                   ),
                   SpeedDialChild(
                     child: const Icon(Icons.logout),
                     label: 'Logout',
                     foregroundColor: Colors.white,
-                    backgroundColor: Colors.orange,
+                    backgroundColor: Color(0xFFC65151),
                     onTap: _logout,
                   ),
                 ],
@@ -741,7 +804,7 @@ class StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   StickyHeaderDelegate({
     required this.child,
-    this.height = 60.0,
+    this.height = 40.0,
   });
 
   @override

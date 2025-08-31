@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:app_test/pageflip/demo_page.dart';
+import 'package:app_test/pageflip/page_flip.dart';
 import 'package:app_test/register_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,7 +14,6 @@ import 'login_page.dart';
 
 class AppRouter {
   static GoRouter router(BuildContext context) {
-    final authBloc = context.read<AuthBloc>();
 
     return GoRouter(
       initialLocation: '/login',
@@ -64,9 +65,32 @@ class AppRouter {
                   child: child,
                 ),
           ),
+          routes: [
+            GoRoute(
+              name: 'screen',
+              path: 'screen',
+              pageBuilder: (context, state) => CustomTransitionPage<void>(
+                key: state.pageKey,
+                child: Screen(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+                    ScaleTransition(
+                      scale: animation.drive(
+                        Tween(begin: 0.8, end: 1.0)
+                            .chain(CurveTween(curve: Curves.decelerate)),
+                      ),
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      ),
+                    ),
+              ),
+            ),
+          ]
         ),
+
       ],
       redirect: (BuildContext context, GoRouterState state) {
+        final authBloc = context.read<AuthBloc>();
         final authState = authBloc.state;
         final bool loggedIn = authState is AuthAuthenticated;
         final bool loggingIn = state.matchedLocation == '/login';
@@ -77,11 +101,10 @@ class AppRouter {
 
         return null;
       },
-      refreshListenable: GoRouterRefreshStream(authBloc.stream),
+      refreshListenable: GoRouterRefreshStream(context.read<AuthBloc>().stream),
     );
   }
 }
-
 
 
 

@@ -16,6 +16,15 @@ class LoadBooks extends BooksEvent {
   List<Object?> get props => [userId];
 }
 
+class LoadAllBooks extends BooksEvent {
+  final String? userId;
+
+  const LoadAllBooks({this.userId});
+
+  @override
+  List<Object?> get props => [userId];
+}
+
 class DeleteBookAndReload extends BooksEvent {
   final int bookId;
 
@@ -47,13 +56,4 @@ class DeleteBook extends BooksEvent {
 
   @override
   List<Object?> get props => [bookId];
-}
-
-class BooksSubscriptionRequested extends BooksEvent {
-  final String userId;
-
-  const BooksSubscriptionRequested({required this.userId});
-
-  @override
-  List<Object?> get props => [userId];
 }
