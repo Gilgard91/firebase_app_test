@@ -572,7 +572,7 @@ class HomePageState extends State<HomePage> {
                       child: Center(
                         child: Padding(
                           padding: EdgeInsets.all(50.0),
-                          child: CircularProgressIndicator(color: Colors.white,),
+                          child: CircularProgressIndicator(color: Colors.black,),
                         ),
                       ),
                     );
@@ -623,7 +623,7 @@ class HomePageState extends State<HomePage> {
                         child: Center(
                           child: Padding(
                             padding: EdgeInsets.all(50.0),
-                            child: CircularProgressIndicator(color: Colors.white,),
+                            child: CircularProgressIndicator(color: Colors.black,),
                           ),
                         ),
                       );
