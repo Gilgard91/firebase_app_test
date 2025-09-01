@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:app_test/connection_checker/bloc/connection_bloc.dart';
-import 'package:app_test/element/bloc/google_book_bloc.dart';
+import 'package:app_test/element/bloc/google_books_bloc.dart';
 import 'package:app_test/router.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'auth/bloc/auth_bloc.dart';
 import 'auth/bloc/auth_state.dart';
 import 'core/theme/app_theme.dart';
-import 'element/bloc/book_bloc.dart';
+import 'element/bloc/my_books_bloc.dart';
 import 'firebase_options.dart';
 import 'home_page.dart';
 import 'login_page.dart';

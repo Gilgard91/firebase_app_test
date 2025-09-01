@@ -7,7 +7,7 @@ import '../element/bloc/book.dart';
 
 class BookApiService {
   static const String googleAPIUrl = 'https://www.googleapis.com/books/v1/volumes?q=subject:';
-  static const String backendUrl = 'http://192.168.1.2:8080/api';
+  static const String backendUrl = 'http://192.168.4.66:8080/api';
   static const Duration _timeout = Duration(milliseconds: 3000);
 
   static Future<List<Book>> getBooks({String? subject}) async {
@@ -32,10 +32,10 @@ class BookApiService {
           return [];
         }
       } else {
-        throw Exception('Failed to load books: ${response.statusCode}');
+        throw Exception('err: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error fetching books: $e');
+      throw Exception('err: $e');
     }
   }
 
@@ -56,7 +56,7 @@ class BookApiService {
         return [];
       }
     } catch (e) {
-      print('Error fetching books: $e');
+      print('err: $e');
       return [];
     }
   }
@@ -68,10 +68,10 @@ class BookApiService {
       if (response.statusCode == 200) {
 
       } else {
-        throw Exception('Failed to load books: ${response.statusCode}');
+        throw Exception('err: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error fetching books: $e');
+      throw Exception('err: $e');
     }
   }
 

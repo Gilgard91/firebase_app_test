@@ -60,7 +60,7 @@ class AppTheme {
           vertical: 16,
         ),
         labelStyle: TextStyle(
-          color: Color(0xFFA4A4A4), // Colore del label
+          color: Color(0xFFA4A4A4),
           fontSize: 16,
         ),
         floatingLabelStyle: TextStyle(

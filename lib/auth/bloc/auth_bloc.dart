@@ -18,13 +18,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutRequested>(_onLogoutRequested);
     on<AuthStatusChanged>(_onStatusChanged);
 
-    _authSubscription = _firebaseAuth.authStateChanges().listen((user) {
-      add(AuthStatusChanged(
-        isAuthenticated: user != null,
-        userId: user?.uid,
-        name: user?.displayName ?? ''
-      ));
-    });
+    // _authSubscription = _firebaseAuth.authStateChanges().listen((user) {
+    //   add(AuthStatusChanged(
+    //     isAuthenticated: user != null,
+    //     userId: user?.uid,
+    //     name: user?.displayName ?? ''
+    //   ));
+    // });
   }
 
   Future<void> _onLoginRequested(
@@ -38,12 +38,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password.trim(),
       );
 
-      // if (userCredential.user != null) {
-      //   emit(AuthAuthenticated(
-      //     userId: userCredential.user!.uid,
-      //     email: userCredential.user!.email!,
-      //   ));
-      // }
+      final UserCredential userCredential = await _firebaseAuth.signInWithEmailAndPassword(email: event.email, password: event.password);
+      String? name = userCredential.user!.displayName;
+      if (userCredential.user != null) {
+        emit(AuthAuthenticated(
+          userId: userCredential.user!.uid,
+          email: userCredential.user!.email!,
+          name: name,
+        ));
+      }
     } on FirebaseAuthException catch (e) {
       String errorMessage = _getErrorMessage(e.code);
       emit(AuthError(message: errorMessage));
@@ -101,7 +104,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthAuthenticated(
           userId: event.userId!,
           email: user.email!,
-          // name: user.displayName.toString()
           name: event.name
         ));
       }

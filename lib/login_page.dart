@@ -48,38 +48,28 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _register() {
-    if (_formKey.currentState!.validate()) {
-      context.read<AuthBloc>().add(
-        AuthRegisterRequested(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
         body: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
-            if (state is AuthAuthenticated) {
-              context.go('/home');
+            if (state is AuthRegistrationSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)),
+              );
+              _emailController.clear();
+              _passwordController.clear();
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message, textAlign: TextAlign.center,)
                 ),
               );
-            } else if (state is AuthRegistrationSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
-              _emailController.clear();
-              _passwordController.clear();
-            }
+            } else if (state is AuthAuthenticated) {
+
+                context.go('/home');
+              }
           },
           child: Stack(
             children: [

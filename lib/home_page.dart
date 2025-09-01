@@ -11,10 +11,10 @@ import 'auth/bloc/auth_event.dart';
 import 'auth/bloc/auth_state.dart';
 import 'core/theme/app_colors.dart';
 import 'element/bloc/book.dart';
-import 'element/bloc/book_bloc.dart';
-import 'element/bloc/book_event.dart';
-import 'element/bloc/book_state.dart';
-import 'element/bloc/google_book_bloc.dart';
+import 'element/bloc/my_books_bloc.dart';
+import 'element/bloc/my_books_event.dart';
+import 'element/bloc/my_books_state.dart';
+import 'element/bloc/google_books_bloc.dart';
 import 'helpers/home_bloc_helper.dart';
 
 class HomePage extends StatefulWidget {
@@ -506,7 +506,7 @@ class HomePageState extends State<HomePage> {
                         title: Stack(
                           children: [
                             Text(
-                              'Benvenuto, ${state.name}',
+                              state.name != null ?  'Benvenuto, ${state.name}' : 'Benvenuto',
                               style: TextStyle(
                                 fontSize: 25,
                                 fontWeight: FontWeight.bold,
@@ -517,7 +517,7 @@ class HomePageState extends State<HomePage> {
                               ),
                             ),
                             Text(
-                              'Benvenuto, ${state.name}',
+                              state.name != null ?  'Benvenuto, ${state.name}' : 'Benvenuto',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 25,

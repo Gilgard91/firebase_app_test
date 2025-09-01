@@ -1,13 +1,12 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:meta/meta.dart';
 
-import '../../api/BooksApiService.dart';
+import '../../api/books_api_service.dart';
 import 'book.dart';
 
-part 'google_book_event.dart';
-part 'google_book_state.dart';
+part 'google_books_event.dart';
+part 'google_books_state.dart';
 
 class GoogleBooksBloc extends Bloc<GoogleBooksEvent, GoogleBooksState> {
   GoogleBooksBloc() : super(GoogleBookInitial()) {

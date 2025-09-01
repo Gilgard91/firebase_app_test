@@ -1,4 +1,4 @@
-part of 'google_book_bloc.dart';
+part of 'google_books_bloc.dart';
 
 abstract class GoogleBooksEvent extends Equatable {
   const GoogleBooksEvent();

@@ -3,18 +3,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../api/BooksApiService.dart';
+import '../../api/books_api_service.dart';
 import 'book.dart';
-import 'book_event.dart';
-import 'book_state.dart';
+import 'my_books_event.dart';
+import 'my_books_state.dart';
 
 class BooksBloc extends Bloc<BooksEvent, BooksState> {
-  final FirebaseFirestore _firestore;
-  StreamSubscription<QuerySnapshot>? _BooksSubscription;
-
-  BooksBloc({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        super(BooksInitial()) {
+  BooksBloc() : super(BooksInitial()) {
 
     on<LoadBooks>(_onLoadBooks);
     on<DeleteBook>(_onDeleteBook);
@@ -33,6 +28,7 @@ class BooksBloc extends Bloc<BooksEvent, BooksState> {
 
 
     try {
+      await Future.delayed(const Duration(seconds: 1));
       myBooks = await BookApiService.getBooksBackend();
     } catch (e) {
       debugPrint('Errore caricamento myBooks: $e');
@@ -56,7 +52,6 @@ class BooksBloc extends Bloc<BooksEvent, BooksState> {
         ));
       }
 
-      // Elimina il libro
       await BookApiService.deleteBook(event.bookId);
 
       emit(BooksLoading());
