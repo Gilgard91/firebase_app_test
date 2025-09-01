@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app_test/pageflip/demo_page.dart';
 import 'package:app_test/pageflip/page_flip.dart';
 import 'package:app_test/register_page.dart';
+import 'package:app_test/tab_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +56,7 @@ class AppRouter {
           path: '/home',
           pageBuilder: (context, state) => CustomTransitionPage<void>(
             key: state.pageKey,
-            child: const HomePage(),
+            child: const TabBarPage(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) =>
                 SlideTransition(
                   position: animation.drive(

@@ -483,7 +483,8 @@ class HomePageState extends State<HomePage> {
                 backgroundColor: Colors.transparent,
                 foregroundColor: Colors.white,
                 pinned: true,
-                expandedHeight: 130,
+                expandedHeight: 170,
+                collapsedHeight: 70,
                 bottom: PreferredSize(
                   preferredSize: Size.fromHeight(0.0),
                   child: Container(
