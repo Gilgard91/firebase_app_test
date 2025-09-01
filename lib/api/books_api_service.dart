@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
-import '../element/bloc/book.dart';
+import '../books/bloc/book.dart';
 
 class BookApiService {
   static const String googleAPIUrl = 'https://www.googleapis.com/books/v1/volumes?q=subject:';

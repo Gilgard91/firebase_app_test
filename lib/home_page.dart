@@ -10,11 +10,11 @@ import 'auth/bloc/auth_bloc.dart';
 import 'auth/bloc/auth_event.dart';
 import 'auth/bloc/auth_state.dart';
 import 'core/theme/app_colors.dart';
-import 'element/bloc/book.dart';
-import 'element/bloc/my_books_bloc.dart';
-import 'element/bloc/my_books_event.dart';
-import 'element/bloc/my_books_state.dart';
-import 'element/bloc/google_books_bloc.dart';
+import 'books/bloc/book.dart';
+import 'books/bloc/my_books_bloc.dart';
+import 'books/bloc/my_books_event.dart';
+import 'books/bloc/my_books_state.dart';
+import 'books/bloc/google_books_bloc.dart';
 import 'helpers/home_bloc_helper.dart';
 
 class HomePage extends StatefulWidget {
